@@ -1,0 +1,1240 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+
+<!-- Cropper.js CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<div class="profile-wrapper">
+
+  <!-- ── BANNER ── -->
+  <div class="profile-banner">
+    <div class="banner-bg"></div>
+    <div class="banner-glow"></div>
+    <div class="profile-hero">
+
+      <div class="avatar-wrapper">
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" alt="Avatar" class="avatar-img" id="banner-avatar"/>
+        {% else %}
+          <div class="avatar-placeholder" id="banner-avatar-placeholder">
+            {{ request.user.username|first|upper }}
+          </div>
+        {% endif %}
+        <div class="avatar-badge">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="hero-info">
+        <div class="hero-username-row">
+          <h1 class="hero-username">{{ request.user.username }}</h1>
+          {% if request.user.first_name %}
+          <span class="hero-fullname">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+          {% endif %}
+        </div>
+        <p class="hero-email">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          {{ request.user.email }}
+        </p>
+        {% if profile.location %}
+        <p class="hero-location">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          {{ profile.location }}
+        </p>
+        {% endif %}
+        <p class="hero-joined">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Joined {{ request.user.date_joined|date:"F Y" }}
+        </p>
+        {% if profile.bio %}
+        <p class="hero-bio">{{ profile.bio }}</p>
+        {% endif %}
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-chip stat-red">
+          <span class="stat-chip-number">{{ total_reports }}</span>
+          <span class="stat-chip-label">Reports</span>
+        </div>
+        <div class="stat-chip stat-blue">
+          <span class="stat-chip-number">{{ total_likes }}</span>
+          <span class="stat-chip-label">Likes</span>
+        </div>
+        <div class="stat-chip stat-green">
+          <span class="stat-chip-number">{{ request.user.comments.count }}</span>
+          <span class="stat-chip-label">Comments</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── GRID ── -->
+  <div class="profile-grid">
+
+    <!-- LEFT: Edit Form -->
+    <div class="profile-card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </div>
+        <div>
+          <h2>Edit Profile</h2>
+          <p class="card-subtitle">Update your personal information</p>
+        </div>
+      </div>
+
+      <form method="POST" enctype="multipart/form-data" class="profile-form" id="profile-form">
+        {% csrf_token %}
+
+        <!-- Avatar Upload -->
+        <div class="form-group">
+          <label class="form-label">Profile Picture</label>
+          <div class="avatar-upload-wrapper">
+            <div class="avatar-preview" id="avatar-preview">
+              {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" id="preview-img" alt="avatar"/>
+              {% else %}
+                <div class="avatar-preview-placeholder" id="preview-placeholder">
+                  {{ request.user.username|first|upper }}
+                </div>
+                <img id="preview-img" style="display:none;" alt="avatar"/>
+              {% endif %}
+            </div>
+            <div class="upload-info">
+              <div class="upload-actions">
+                <label for="avatar-file-input" class="upload-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                       stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  Choose Photo
+                </label>
+                {% if profile.avatar %}
+                <button type="button" class="remove-avatar-btn" id="remove-avatar-btn" onclick="removeAvatar()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                       stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14H6L5 6"/>
+                    <path d="M10 11v6"/>
+                    <path d="M14 11v6"/>
+                    <path d="M9 6V4h6v2"/>
+                  </svg>
+                  Remove Photo
+                </button>
+                {% endif %}
+              </div>
+              <input type="file" id="avatar-file-input" accept="image/*"/>
+              <input type="hidden" name="avatar_cropped" id="avatar-cropped"/>
+              <input type="hidden" name="remove_avatar" id="remove-avatar" value=""/>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Two column row -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            {{ user_form.username }}
+            {% if user_form.username.errors %}
+              <p class="form-error">{{ user_form.username.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            {{ user_form.email }}
+            {% if user_form.email.errors %}
+              <p class="form-error">{{ user_form.email.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            {{ user_form.first_name }}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            {{ user_form.last_name }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Bio</label>
+          {{ form.bio }}
+          <p class="form-hint">Tell the community about yourself</p>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <div class="loc-search-wrapper" id="profile-loc-wrapper">
+              {{ form.location }}
+              <div class="loc-dropdown" id="profile-loc-dropdown"></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">SOS Emergency Contact</label>
+            {{ form.sos_phone }}
+            <p class="form-hint">Used when you trigger SOS</p>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-save">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Save Changes
+        </button>
+      </form>
+    </div>
+
+    <!-- RIGHT: My Reports -->
+    <div class="profile-card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+        </div>
+        <div>
+          <h2>My Reports</h2>
+          <p class="card-subtitle">Your last {{ user_incidents|length }} incident reports</p>
+        </div>
+      </div>
+
+      {% if user_incidents %}
+        <div class="my-reports-list">
+          {% for incident in user_incidents %}
+          <div class="report-item danger-{{ incident.danger_level }}">
+            <div class="report-item-header">
+              <span class="report-type">{{ incident.get_type_display }}</span>
+              <span class="danger-badge level-{{ incident.danger_level }}">
+                {% if incident.danger_level == 1 %}Low{% elif incident.danger_level == 2 %}Medium{% else %}High{% endif %}
+              </span>
+            </div>
+            <p class="report-title">{{ incident.title }}</p>
+            <div class="report-meta">
+              <span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                {{ incident.location }}
+              </span>
+              <span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                {{ incident.timestamp|date:"M d, Y" }}
+              </span>
+              <span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round">
+                  <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3H14z"/>
+                  <path d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
+                </svg>
+                {{ incident.total_likes }}
+              </span>
+            </div>
+            <div class="report-actions">
+              {% if incident.verified %}
+                <span class="verified-badge">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                       stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Verified
+                </span>
+              {% else %}
+                <span class="pending-badge">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                       stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  Pending
+                </span>
+              {% endif %}
+              <div class="report-btns">
+                <a href="{% url 'incident_detail' incident.id %}" class="btn-view-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                       stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  View
+                </a>
+                <a href="{% url 'edit_incident' incident.id %}" class="btn-edit-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                       stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                  Edit
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if total_reports > 10 %}
+        <div class="view-all-reports">
+          <a href="{% url 'incidents' %}" class="btn-view-all">
+            View All {{ total_reports }} Reports →
+          </a>
+        </div>
+        {% endif %}
+
+      {% else %}
+        <div class="no-reports">
+          <div class="no-reports-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <p>You haven't reported any incidents yet.</p>
+          <a href="{% url 'report' %}" class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            Report Incident
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- ── CROP MODAL ── -->
+<div class="crop-modal-overlay" id="crop-modal" style="display:none;">
+  <div class="crop-modal">
+    <div class="crop-modal-header">
+      <h3>Crop Your Photo</h3>
+      <p>Drag to reposition · Scroll to zoom</p>
+    </div>
+    <div class="crop-container">
+      <img id="crop-image" src="" alt="crop"/>
+    </div>
+    <div class="crop-controls">
+      <button type="button" onclick="rotateCrop(-90)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+        </svg>
+        Rotate
+      </button>
+      <button type="button" onclick="zoomCrop(0.1)">Zoom +</button>
+      <button type="button" onclick="zoomCrop(-0.1)">Zoom −</button>
+      <button type="button" onclick="resetCrop()">Reset</button>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn-cancel" onclick="closeCropModal()">Cancel</button>
+      <button type="button" class="crop-btn-confirm" onclick="confirmCrop()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+             stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Use This Crop
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ── WRAPPER ── */
+  .profile-wrapper { max-width: 1100px; margin: 0 auto; padding: 0 0 60px; }
+
+  /* ── BANNER ── */
+  .profile-banner {
+    position: relative;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    margin-bottom: 28px;
+    border: 1px solid rgba(230,57,70,0.15);
+    transition: border-color 0.3s var(--ease);
+  }
+  .profile-banner:hover { border-color: rgba(230,57,70,0.3); }
+
+  .banner-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg,
+      rgba(230,57,70,0.1) 0%,
+      rgba(10,12,22,0.97) 40%,
+      rgba(79,142,247,0.06) 100%);
+    backdrop-filter: blur(12px);
+  }
+
+  /* Animated glow orb */
+  .banner-glow {
+    position: absolute;
+    top: -60px; left: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(230,57,70,0.08) 0%, transparent 70%);
+    animation: glowDrift 6s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes glowDrift {
+    from { transform: translate(0, 0); }
+    to   { transform: translate(40px, 20px); }
+  }
+
+  .profile-hero {
+    position: relative; z-index: 1;
+    display: flex; align-items: center;
+    gap: 28px; padding: 32px 36px; flex-wrap: wrap;
+  }
+
+  /* ── AVATAR ── */
+  .avatar-wrapper { position: relative; flex-shrink: 0; }
+
+  .avatar-img, .avatar-placeholder {
+    width: 96px; height: 96px;
+    border-radius: 50%;
+    border: 3px solid rgba(230,57,70,0.4);
+    object-fit: cover;
+    box-shadow: 0 0 20px rgba(230,57,70,0.2);
+    transition: box-shadow 0.3s var(--ease);
+  }
+  .avatar-wrapper:hover .avatar-img,
+  .avatar-wrapper:hover .avatar-placeholder {
+    box-shadow: 0 0 32px rgba(230,57,70,0.35);
+  }
+
+  .avatar-placeholder {
+    background: linear-gradient(135deg, var(--red), #a01020);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 36px; font-weight: 700; color: white;
+  }
+
+  .avatar-badge {
+    position: absolute; bottom: 2px; right: 2px;
+    background: var(--red);
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 8px var(--red-glow);
+  }
+
+  /* ── HERO INFO ── */
+  .hero-info { flex: 1; min-width: 180px; }
+
+  .hero-username-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+
+  .hero-username {
+    font-family: var(--font-display);
+    font-size: 1.8rem; font-weight: 700;
+    color: var(--white); margin: 0;
+    letter-spacing: 0.3px;
+  }
+
+  .hero-fullname {
+    font-size: 0.85rem;
+    color: var(--gray);
+    font-weight: 400;
+  }
+
+  .hero-email, .hero-location, .hero-joined {
+    font-size: 0.78rem;
+    color: var(--gray);
+    margin: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+  }
+
+  .hero-bio {
+    font-size: 0.84rem;
+    color: var(--gray-2);
+    margin-top: 8px;
+    line-height: 1.5;
+    max-width: 400px;
+  }
+
+  /* ── STAT CHIPS ── */
+  .hero-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .stat-chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-md);
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 76px;
+    transition: all 0.25s var(--ease);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-chip::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 20%; right: 20%;
+    height: 1px;
+    transition: all 0.3s;
+  }
+
+  .stat-red::before   { background: var(--red);   box-shadow: 0 0 8px var(--red-glow); }
+  .stat-blue::before  { background: var(--blue);  box-shadow: 0 0 8px var(--blue-glow); }
+  .stat-green::before { background: var(--green); box-shadow: 0 0 8px rgba(16,185,129,0.4); }
+
+  .stat-chip:hover {
+    border-color: var(--border-3);
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-2px);
+  }
+
+  .stat-chip-number {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1;
+    letter-spacing: -0.5px;
+  }
+
+  .stat-red   .stat-chip-number { color: var(--red); }
+  .stat-blue  .stat-chip-number { color: var(--blue); }
+  .stat-green .stat-chip-number { color: var(--green); }
+
+  .stat-chip-label {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--gray);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+  }
+
+  /* ── GRID ── */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── CARDS ── */
+  .profile-card {
+    background: var(--panel);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-xl);
+    padding: 24px 26px;
+    transition: border-color 0.3s var(--ease);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  }
+
+  .profile-card:hover { border-color: rgba(230,57,70,0.18); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-header-icon {
+    width: 34px; height: 34px;
+    background: var(--red-dim);
+    border: 1px solid rgba(230,57,70,0.18);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--red);
+    flex-shrink: 0;
+  }
+
+  .card-header h2 {
+    font-size: 0.95rem; font-weight: 600;
+    color: var(--white); margin: 0 0 2px;
+  }
+  .card-subtitle { font-size: 0.75rem; color: var(--gray); margin: 0; }
+
+  /* ── PROFILE FORM ── */
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .profile-form .form-group { margin-bottom: 16px; }
+
+  .form-label {
+    display: block;
+    font-size: 0.68rem; font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 7px;
+  }
+
+  .form-hint  { font-size: 0.7rem; color: var(--gray); margin: 4px 0 0; }
+  .form-error { font-size: 0.7rem; color: var(--red);  margin: 4px 0 0; }
+
+  .profile-form textarea,
+  .profile-form input[type="text"],
+  .profile-form input[type="email"],
+  .profile-form input[type="tel"] {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    color: var(--off-white);
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    transition: all 0.2s var(--ease);
+    box-sizing: border-box;
+    resize: vertical;
+  }
+
+  .profile-form textarea:focus,
+  .profile-form input:focus {
+    outline: none;
+    border-color: rgba(230,57,70,0.4);
+    background: rgba(255,255,255,0.06);
+    box-shadow: 0 0 0 3px var(--red-dim);
+  }
+
+  /* ── AVATAR UPLOAD ── */
+  .avatar-upload-wrapper { display: flex; align-items: center; gap: 14px; }
+
+  .avatar-preview {
+    width: 64px; height: 64px;
+    border-radius: 50%; overflow: hidden;
+    border: 2px solid rgba(230,57,70,0.3);
+    flex-shrink: 0;
+  }
+  .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+  .avatar-preview-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, var(--red), #a01020);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: white;
+    font-family: var(--font-display);
+  }
+
+  .upload-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--red-dim);
+    border: 1px solid rgba(230,57,70,0.25);
+    border-radius: var(--radius-sm);
+    color: var(--off-white);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+  }
+  .upload-btn:hover {
+    background: rgba(230,57,70,0.2);
+    border-color: rgba(230,57,70,0.4);
+  }
+
+  .remove-avatar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: transparent;
+    border: 1px solid rgba(230,57,70,0.2);
+    border-radius: var(--radius-sm);
+    color: var(--gray);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+    font-family: var(--font-body);
+  }
+  .remove-avatar-btn:hover {
+    background: rgba(230,57,70,0.08);
+    border-color: rgba(230,57,70,0.4);
+    color: var(--red);
+  }
+
+  input[type="file"] { display: none; }
+  .upload-hint { font-size: 0.68rem; color: var(--gray); margin: 5px 0 0; }
+
+  /* ── SAVE BUTTON ── */
+  .btn-save {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, var(--red), #c8303c);
+    border: none; border-radius: var(--radius-md);
+    color: white; font-family: var(--font-body);
+    font-size: 0.88rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s var(--ease);
+    margin-top: 6px;
+    box-shadow: 0 4px 16px var(--red-glow);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(230,57,70,0.4);
+  }
+
+  /* ── REPORTS LIST ── */
+  .my-reports-list {
+    display: flex; flex-direction: column; gap: 10px;
+    max-height: 560px; overflow-y: auto; padding-right: 2px;
+  }
+  .my-reports-list::-webkit-scrollbar { width: 3px; }
+  .my-reports-list::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+  .report-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    transition: all 0.2s var(--ease);
+    position: relative;
+  }
+  .report-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px; border-radius: 2px 0 0 2px;
+  }
+  .report-item.danger-1::before { background: var(--green); }
+  .report-item.danger-2::before { background: var(--yellow); }
+  .report-item.danger-3::before { background: var(--red); }
+  .report-item:hover {
+    border-color: var(--border-2);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .report-item-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 5px;
+  }
+  .report-type {
+    font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--gray); font-family: var(--font-mono);
+  }
+  .report-title {
+    font-size: 0.88rem; font-weight: 600;
+    color: var(--white); margin: 0 0 7px;
+    line-height: 1.3;
+  }
+  .report-meta {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    font-size: 0.7rem; color: var(--gray);
+    margin-bottom: 9px; font-family: var(--font-mono);
+  }
+  .report-meta span {
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  .report-actions {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .report-btns { display: flex; gap: 6px; }
+
+  .btn-view-sm, .btn-edit-sm {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: var(--radius-sm);
+    font-size: 0.72rem; text-decoration: none;
+    transition: all 0.2s var(--ease);
+    font-weight: 500;
+  }
+  .btn-view-sm {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-2);
+    color: var(--gray-2);
+  }
+  .btn-view-sm:hover { background: rgba(255,255,255,0.1); color: var(--white); }
+
+  .btn-edit-sm {
+    background: var(--red-dim);
+    border: 1px solid rgba(230,57,70,0.2);
+    color: var(--red);
+  }
+  .btn-edit-sm:hover { background: rgba(230,57,70,0.18); }
+
+  .view-all-reports { margin-top: 14px; text-align: center; }
+  .btn-view-all {
+    font-size: 0.78rem; color: var(--gray);
+    text-decoration: none; transition: color 0.2s;
+  }
+  .btn-view-all:hover { color: var(--white); }
+
+  .no-reports { text-align: center; padding: 36px 20px; }
+  .no-reports-icon {
+    width: 56px; height: 56px;
+    background: var(--panel-2);
+    border: 1px solid var(--border-2);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+    color: var(--gray);
+  }
+  .no-reports p { color: var(--gray); margin-bottom: 16px; font-size: 0.88rem; }
+
+  /* ── CROP MODAL ── */
+  .crop-modal-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.88);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; backdrop-filter: blur(8px);
+  }
+  .crop-modal {
+    background: rgba(10,12,22,0.98);
+    border: 1px solid rgba(230,57,70,0.25);
+    border-radius: var(--radius-xl);
+    padding: 26px; width: 100%; max-width: 500px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  }
+  .crop-modal-header { text-align: center; margin-bottom: 18px; }
+  .crop-modal-header h3 {
+    color: var(--white); font-size: 1rem;
+    font-family: var(--font-display);
+    margin: 0 0 3px;
+  }
+  .crop-modal-header p { color: var(--gray); font-size: 0.75rem; margin: 0; }
+  .crop-container {
+    width: 100%; height: 300px;
+    background: #000; border-radius: var(--radius-md);
+    overflow: hidden; margin-bottom: 14px;
+    border: 1px solid var(--border-2);
+  }
+  .crop-container img { max-width: 100%; display: block; }
+  .crop-controls {
+    display: flex; gap: 6px; justify-content: center;
+    margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .crop-controls button {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 12px; border-radius: var(--radius-sm);
+    font-size: 0.75rem; cursor: pointer;
+    border: 1px solid var(--border-2);
+    background: rgba(255,255,255,0.05);
+    color: var(--gray-2);
+    transition: all 0.2s var(--ease);
+    font-family: var(--font-body);
+  }
+  .crop-controls button:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--white);
+    border-color: var(--border-3);
+  }
+  .crop-actions { display: flex; gap: 10px; }
+  .crop-btn-cancel {
+    flex: 1; padding: 11px; border-radius: var(--radius-md);
+    background: transparent; border: 1px solid var(--border-2);
+    color: var(--gray); font-size: 0.85rem; cursor: pointer;
+    transition: all 0.2s var(--ease); font-family: var(--font-body);
+  }
+  .crop-btn-cancel:hover { color: var(--white); border-color: var(--border-3); }
+  .crop-btn-confirm {
+    flex: 2; padding: 11px; border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--red), #c8303c);
+    border: none; color: white; font-size: 0.85rem;
+    font-weight: 600; cursor: pointer;
+    transition: all 0.25s var(--ease);
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    font-family: var(--font-body);
+    box-shadow: 0 4px 14px var(--red-glow);
+  }
+  .crop-btn-confirm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(230,57,70,0.45);
+  }
+
+  /* ── LOCATION AUTOCOMPLETE ── */
+  #profile-loc-wrapper { position: relative; }
+
+  #profile-loc-wrapper input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    color: var(--off-white);
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    transition: all 0.2s var(--ease);
+    box-sizing: border-box;
+  }
+
+  #profile-loc-wrapper input:focus {
+    outline: none;
+    border-color: rgba(230,57,70,0.4);
+    background: rgba(255,255,255,0.06);
+    box-shadow: 0 0 0 3px var(--red-dim);
+  }
+
+  .loc-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: rgba(10,12,22,0.98);
+    border: 1px solid rgba(230,57,70,0.25);
+    border-radius: var(--radius-md);
+    z-index: 9999;
+    max-height: 220px;
+    overflow-y: auto;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+  }
+  .loc-dropdown.open { display: block; }
+  .loc-dropdown::-webkit-scrollbar { width: 3px; }
+  .loc-dropdown::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+  .loc-option {
+    padding: 9px 12px;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+  .loc-option:last-child { border-bottom: none; }
+  .loc-option:hover, .loc-option.highlighted {
+    background: rgba(230,57,70,0.1);
+    color: var(--white);
+    padding-left: 16px;
+  }
+  .loc-option-icon { flex-shrink: 0; font-size: 13px; margin-top: 1px; color: var(--red); }
+  .loc-option-text { display: flex; flex-direction: column; gap: 1px; }
+  .loc-option-name { font-weight: 600; font-size: 0.8rem; color: var(--white); }
+  .loc-option-detail { font-size: 0.68rem; color: var(--gray); font-family: var(--font-mono); }
+
+  .loc-searching {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    color: var(--gray);
+    text-align: center;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .loc-no-results {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 1024px) and (min-width: 768px) {
+    .profile-hero { padding: 26px 28px; gap: 20px; }
+    .profile-grid { gap: 16px; }
+    .profile-card { padding: 20px 22px; }
+    .form-row { grid-template-columns: 1fr; gap: 0; }
+  }
+  @media (max-width: 767px) and (min-width: 480px) {
+    .profile-hero { padding: 22px 20px; gap: 16px; }
+    .avatar-img, .avatar-placeholder { width: 80px; height: 80px; }
+    .hero-username { font-size: 1.5rem; }
+    .profile-grid { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; gap: 0; }
+    .crop-container { height: 250px; }
+  }
+  @media (max-width: 479px) {
+    .profile-banner { border-radius: var(--radius-lg); margin-bottom: 16px; }
+    .profile-hero { padding: 18px 16px; gap: 14px; flex-direction: column; align-items: flex-start; }
+    .avatar-img, .avatar-placeholder { width: 72px; height: 72px; }
+    .hero-stats { width: 100%; }
+    .stat-chip { flex: 1; padding: 10px 8px; min-width: unset; }
+    .profile-grid { grid-template-columns: 1fr; gap: 14px; }
+    .profile-card { padding: 16px; border-radius: var(--radius-lg); }
+    .form-row { grid-template-columns: 1fr; gap: 0; }
+    .avatar-upload-wrapper { flex-direction: column; align-items: flex-start; }
+    .crop-modal { padding: 18px 14px; }
+    .crop-container { height: 210px; }
+  }
+</style>
+
+<script>
+  let cropper = null;
+
+  const fileInput    = document.getElementById('avatar-file-input');
+  const cropImage    = document.getElementById('crop-image');
+  const cropModal    = document.getElementById('crop-modal');
+  const croppedInput = document.getElementById('avatar-cropped');
+  const previewImg   = document.getElementById('preview-img');
+  const placeholder  = document.getElementById('preview-placeholder');
+
+  fileInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image too large. Maximum size is 5MB.');
+      this.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      cropImage.src = e.target.result;
+      openCropModal();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function openCropModal() {
+    cropModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    if (cropper) { cropper.destroy(); cropper = null; }
+    cropper = new Cropper(cropImage, {
+      aspectRatio: 1, viewMode: 1, dragMode: 'move',
+      autoCropArea: 0.8, responsive: true, restore: false,
+      guides: true, center: true, highlight: false,
+      cropBoxMovable: true, cropBoxResizable: true,
+      toggleDragModeOnDblclick: false,
+    });
+  }
+
+  function closeCropModal() {
+    cropModal.style.display = 'none';
+    document.body.style.overflow = '';
+    if (cropper) { cropper.destroy(); cropper = null; }
+    fileInput.value = '';
+  }
+
+  function confirmCrop() {
+    if (!cropper) return;
+    const canvas  = cropper.getCroppedCanvas({ width: 400, height: 400 });
+    const dataURL = canvas.toDataURL('image/jpeg', 0.85);
+    croppedInput.value       = dataURL;
+    previewImg.src           = dataURL;
+    previewImg.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+    const bannerAvatar = document.getElementById('banner-avatar');
+    if (bannerAvatar && bannerAvatar.tagName === 'IMG') bannerAvatar.src = dataURL;
+    closeCropModal();
+  }
+
+  function rotateCrop(deg) { if (cropper) cropper.rotate(deg); }
+  function zoomCrop(ratio) { if (cropper) cropper.zoom(ratio); }
+  function resetCrop()     { if (cropper) cropper.reset(); }
+
+  // ── Remove Avatar ──
+  function removeAvatar() {
+    if (!confirm('Are you sure you want to remove your profile picture?')) return;
+
+    // Set the hidden flag
+    document.getElementById('remove-avatar').value = '1';
+
+    // Reset preview to placeholder letter
+    const previewImg   = document.getElementById('preview-img');
+    const placeholder  = document.getElementById('preview-placeholder');
+    const bannerAvatar = document.getElementById('banner-avatar');
+    const bannerPlaceholder = document.getElementById('banner-avatar-placeholder');
+
+    if (previewImg) {
+      previewImg.src = '';
+      previewImg.style.display = 'none';
+    }
+    if (placeholder) {
+      placeholder.style.display = 'flex';
+    }
+
+    // Update banner avatar back to letter placeholder
+    if (bannerAvatar) {
+      bannerAvatar.style.display = 'none';
+    }
+    if (bannerPlaceholder) {
+      bannerPlaceholder.style.display = 'flex';
+    }
+
+    // Hide the remove button itself
+    const removeBtn = document.getElementById('remove-avatar-btn');
+    if (removeBtn) removeBtn.style.display = 'none';
+
+    // Clear any cropped data
+    document.getElementById('avatar-cropped').value = '';
+  }
+
+  // ── Location Autocomplete ──
+  (function() {
+    const input    = document.querySelector('#profile-loc-wrapper input');
+    const dropdown = document.getElementById('profile-loc-dropdown');
+    if (!input || !dropdown) return;
+
+    let timer = null;
+    let highlighted = -1;
+
+    input.addEventListener('input', function () {
+      const query = this.value.trim();
+      highlighted = -1;
+      if (query.length < 3) {
+        dropdown.classList.remove('open');
+        dropdown.innerHTML = '';
+        return;
+      }
+      clearTimeout(timer);
+      timer = setTimeout(() => fetchLocations(query), 350);
+    });
+
+    input.addEventListener('keydown', function (e) {
+      const opts = dropdown.querySelectorAll('.loc-option');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        highlighted = Math.min(highlighted + 1, opts.length - 1);
+        updateHighlight(opts);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        highlighted = Math.max(highlighted - 1, 0);
+        updateHighlight(opts);
+      } else if (e.key === 'Enter' && highlighted >= 0) {
+        e.preventDefault();
+        if (opts[highlighted]) opts[highlighted].click();
+      } else if (e.key === 'Escape') {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    function fetchLocations(query) {
+      dropdown.innerHTML = '<div class="loc-searching">Searching...</div>';
+      dropdown.classList.add('open');
+      fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=6&addressdetails=1')
+        .then(r => r.json())
+        .then(data => {
+          dropdown.innerHTML = '';
+          if (!data.length) {
+            dropdown.innerHTML = '<div class="loc-no-results">No locations found</div>';
+            return;
+          }
+          data.forEach(place => {
+            const parts  = place.display_name.split(', ');
+            const name   = parts.slice(0, 2).join(', ');
+            const detail = parts.slice(2, 5).join(', ');
+            const opt    = document.createElement('div');
+            opt.className = 'loc-option';
+            opt.innerHTML = '<span class="loc-option-icon">&#x25CF;</span><span class="loc-option-text"><span class="loc-option-name">' + name + '</span><span class="loc-option-detail">' + detail + '</span></span>';
+            opt.addEventListener('click', function () {
+              input.value = name;
+              dropdown.classList.remove('open');
+              dropdown.innerHTML = '';
+              highlighted = -1;
+            });
+            dropdown.appendChild(opt);
+          });
+          dropdown.classList.add('open');
+        })
+        .catch(() => {
+          dropdown.innerHTML = '<div class="loc-no-results">Search failed</div>';
+        });
+    }
+
+    function updateHighlight(opts) {
+      opts.forEach((o, i) => o.classList.toggle('highlighted', i === highlighted));
+      if (opts[highlighted]) opts[highlighted].scrollIntoView({ block: 'nearest' });
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('#profile-loc-wrapper')) {
+        dropdown.classList.remove('open');
+      }
+    });
+  })();
+
+  cropModal.addEventListener('click', function (e) {
+    if (e.target === cropModal) closeCropModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeCropModal();
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,498 @@
+{% extends 'base.html' %} {% load static %} {% block content %}
+
+<div class="auth-wrapper">
+  <div class="pattern-bg"></div>
+
+  <div class="auth-card-unified">
+    <!-- Radar Section -->
+    <div class="radar-section">
+      <div class="radar-display">
+        <div class="radar-screen">
+          <div class="radar-ring ring-1"></div>
+          <div class="radar-ring ring-2"></div>
+          <div class="radar-ring ring-3"></div>
+          <div class="radar-ring ring-4"></div>
+          <div class="radar-crosshair horizontal"></div>
+          <div class="radar-crosshair vertical"></div>
+          <div class="radar-scan"></div>
+          <div class="radar-blip" style="top: 28%; left: 35%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot red"></div>
+          </div>
+          <div class="radar-blip" style="top: 52%; left: 65%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot yellow"></div>
+          </div>
+          <div class="radar-blip" style="top: 68%; left: 28%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot green"></div>
+          </div>
+          <div class="radar-blip" style="top: 18%; left: 72%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot red"></div>
+          </div>
+          <div class="radar-blip" style="top: 75%; left: 68%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot blue"></div>
+          </div>
+          <div class="radar-center">
+            <div class="center-pulse"></div>
+            <div class="center-dot"></div>
+          </div>
+          <div class="radar-glow"></div>
+          <div class="radar-grid"></div>
+        </div>
+        <div class="radar-status">
+          <div class="status-led red"></div>
+          <span>SCANNING ACTIVE</span>
+          <span class="separator">|</span>
+          <span>🛰️ LIVE</span>
+          <span class="separator">|</span>
+          <span>⚡ REAL-TIME</span>
+        </div>
+        <div class="radar-waves">
+          <div class="wave"></div>
+          <div class="wave"></div>
+          <div class="wave"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="form-section">
+      <div class="auth-header">
+        <h2><span class="auth-icon">🛡️</span> Join SafeRoute</h2>
+        <p class="auth-subtitle">Start navigating safely today</p>
+      </div>
+
+      <form method="POST" class="auth-form" id="register-form" novalidate>
+        {% csrf_token %}
+
+        <!-- Username -->
+        <div class="input-group" id="group-username">
+          <div class="input-icon"><i class="fas fa-user"></i></div>
+          <div class="input-field">
+            <input
+              type="text"
+              name="username"
+              id="username"
+              required
+              placeholder=" "
+              minlength="3"
+              maxlength="20"
+              autocomplete="username"
+            />
+            <label for="username">Username</label>
+            <div class="input-line"></div>
+          </div>
+          <span class="field-status" id="status-username"></span>
+        </div>
+        <div class="field-feedback" id="feedback-username"></div>
+        {% if form.username.errors %}
+        <div class="field-error">
+          {% for error in form.username.errors %}
+          <span class="error-msg">⚠️ {{ error }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Email -->
+        <div class="input-group" id="group-email">
+          <div class="input-icon"><i class="fas fa-envelope"></i></div>
+          <div class="input-field">
+            <input
+              type="email"
+              name="email"
+              id="email"
+              required
+              placeholder=" "
+              autocomplete="email"
+            />
+            <label for="email">Email Address</label>
+            <div class="input-line"></div>
+          </div>
+          <span class="field-status" id="status-email"></span>
+        </div>
+        <div class="field-feedback" id="feedback-email"></div>
+        {% if form.email.errors %}
+        <div class="field-error">
+          {% for error in form.email.errors %}
+          <span class="error-msg">⚠️ {{ error }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Password -->
+        <div class="input-group" id="group-password1">
+          <div class="input-icon"><i class="fas fa-lock"></i></div>
+          <div class="input-field">
+            <input
+              type="password"
+              name="password1"
+              id="password1"
+              required
+              placeholder=" "
+              autocomplete="new-password"
+            />
+            <label for="password1">Password</label>
+            <div class="input-line"></div>
+            <span
+              class="eye-toggle"
+              onclick="toggleEye('password1', 'eye1')"
+              id="eye1"
+              >👁️‍🗨️</span
+            >
+          </div>
+        </div>
+        <div class="strength-wrapper" id="strength-wrapper">
+          <div class="strength-bar">
+            <div class="strength-fill" id="strength-fill"></div>
+          </div>
+          <span class="strength-label" id="strength-label"
+            >Enter a password</span
+          >
+        </div>
+        <div class="strength-checklist" id="strength-checklist">
+          <span class="check-item" id="check-length"
+            >✗ At least 8 characters</span
+          >
+          <span class="check-item" id="check-upper"
+            >✗ One uppercase letter</span
+          >
+          <span class="check-item" id="check-number">✗ One number</span>
+          <span class="check-item" id="check-special"
+            >✗ One special character</span
+          >
+        </div>
+        {% if form.password1.errors %}
+        <div class="field-error">
+          {% for error in form.password1.errors %}
+          <span class="error-msg">⚠️ {{ error }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Confirm Password -->
+        <div class="input-group" id="group-password2">
+          <div class="input-icon"><i class="fas fa-check-circle"></i></div>
+          <div class="input-field">
+            <input
+              type="password"
+              name="password2"
+              id="password2"
+              required
+              placeholder=" "
+              autocomplete="new-password"
+            />
+            <label for="password2">Confirm Password</label>
+            <div class="input-line"></div>
+            <span
+              class="eye-toggle"
+              onclick="toggleEye('password2', 'eye2')"
+              id="eye2"
+              >👁️‍🗨️</span
+            >
+          </div>
+          <span class="field-status" id="status-password2"></span>
+        </div>
+        <div class="field-feedback" id="feedback-password2"></div>
+        {% if form.password2.errors %}
+        <div class="field-error">
+          {% for error in form.password2.errors %}
+          <span class="error-msg">⚠️ {{ error }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <button type="submit" class="auth-btn" id="submit-btn">
+          <span class="btn-text">Create Account</span>
+          <span class="btn-icon">→</span>
+        </button>
+
+        <div class="auth-divider"><span>Already have an account?</span></div>
+        <a href="{% url 'login' %}?from=register" class="auth-secondary-btn">Sign In</a>
+      </form>
+    {% if from == 'login' %}
+    <a href="{% url 'login' %}?from=register" class="auth-back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back
+    </a>
+    {% else %}
+    <a href="{% url 'landing' %}" class="auth-back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to home
+    </a>
+    {% endif %}
+
+    </div>
+  </div>
+</div>
+<script src="https://kit.fontawesome.com/345c81a322.js" crossorigin="anonymous"></script>
+
+
+<script>
+  function toggleEye(inputId, eyeId) {
+    const input = document.getElementById(inputId);
+    const eye = document.getElementById(eyeId);
+    if (input.type === "password") {
+      input.type = "text";
+      eye.innerHTML = "👁️";
+      eye.style.opacity = "1";
+    } else {
+      input.type = "password";
+      eye.innerHTML = "👁️‍🗨️";
+      eye.style.opacity = "0.5";
+    }
+  }
+
+  // ── Username ──
+  document.getElementById("username").addEventListener("input", function () {
+    const val = this.value.trim();
+    if (!val) {
+      clearField("group-username", "feedback-username", "status-username");
+      return;
+    }
+    if (val.length < 3)
+      setInvalid(
+        "group-username",
+        "feedback-username",
+        "status-username",
+        `Too short — ${3 - val.length} more needed`,
+      );
+    else if (val.length > 30)
+      setInvalid(
+        "group-username",
+        "feedback-username",
+        "status-username",
+        "Max 30 characters",
+      );
+    else if (!/^[a-zA-Z0-9_]+$/.test(val))
+      setInvalid(
+        "group-username",
+        "feedback-username",
+        "status-username",
+        "Letters, numbers & underscores only",
+      );
+    else
+      setValid(
+        "group-username",
+        "feedback-username",
+        "status-username",
+        `✓ Good (${val.length}/30)`,
+      );
+  });
+
+  // ── Email ──
+  document.getElementById("email").addEventListener("input", function () {
+    const val = this.value.trim();
+    if (!val) {
+      clearField("group-email", "feedback-email", "status-email");
+      return;
+    }
+    const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[^\s@]+\.[^\s@]{2,}$/;
+    const validDomains = [
+      "gmail.com",
+      "yahoo.com",
+      "outlook.com",
+      "hotmail.com",
+      "icloud.com",
+      "protonmail.com",
+      "live.com",
+      "me.com",
+      "aol.com",
+      "zoho.com",
+      "yandex.com",
+    ];
+    const domain = val.split("@")[1] ? val.split("@")[1].toLowerCase() : "";
+    if (!emailRegex.test(val)) {
+      setInvalid(
+        "group-email",
+        "feedback-email",
+        "status-email",
+        "Enter a valid email (e.g. name@gmail.com)",
+      );
+    } else if (
+      !validDomains.includes(domain) &&
+      !domain.endsWith(".edu") &&
+      !domain.endsWith(".org") &&
+      !domain.endsWith(".ng")
+    ) {
+      document
+        .getElementById("group-email")
+        .classList.replace("invalid", "valid");
+      const fb = document.getElementById("feedback-email");
+      fb.textContent = `⚠️ Unusual domain "${domain}" — double check it`;
+      fb.style.color = "#f39c12";
+      document.getElementById("status-email").textContent = "✅";
+    } else {
+      setValid(
+        "group-email",
+        "feedback-email",
+        "status-email",
+        "✓ Valid email",
+      );
+    }
+  });
+
+  // ── Password Strength ──
+  document.getElementById("password1").addEventListener("input", function () {
+    const val = this.value;
+    const hasLength = val.length >= 8;
+    const hasUpper = /[A-Z]/.test(val);
+    const hasNumber = /[0-9]/.test(val);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(val);
+    toggleCheck("check-length", hasLength, "At least 8 characters");
+    toggleCheck("check-upper", hasUpper, "One uppercase letter");
+    toggleCheck("check-number", hasNumber, "One number");
+    toggleCheck("check-special", hasSpecial, "One special character");
+    const score = [hasLength, hasUpper, hasNumber, hasSpecial].filter(
+      Boolean,
+    ).length;
+    const levels = [
+      {
+        pct: "0%",
+        color: "transparent",
+        text: "Enter a password",
+        tc: "rgba(255,255,255,0.3)",
+      },
+      { pct: "25%", color: "#e63946", text: "Weak", tc: "#e63946" },
+      { pct: "50%", color: "#f39c12", text: "Fair", tc: "#f39c12" },
+      { pct: "75%", color: "#3498db", text: "Good", tc: "#3498db" },
+      { pct: "100%", color: "#2ecc71", text: "Strong", tc: "#2ecc71" },
+    ];
+    const l = val.length === 0 ? levels[0] : levels[score];
+    document.getElementById("strength-fill").style.width = l.pct;
+    document.getElementById("strength-fill").style.background = l.color;
+    document.getElementById("strength-label").textContent = l.text;
+    document.getElementById("strength-label").style.color = l.tc;
+    checkMatch();
+  });
+
+  function toggleCheck(id, pass, label) {
+    const el = document.getElementById(id);
+    el.classList.toggle("pass", pass);
+    el.textContent = (pass ? "✓ " : "✗ ") + label;
+  }
+
+  // ── Confirm Password ──
+  document.getElementById("password2").addEventListener("input", checkMatch);
+  function checkMatch() {
+    const p1 = document.getElementById("password1").value;
+    const p2 = document.getElementById("password2").value;
+    if (!p2) {
+      clearField("group-password2", "feedback-password2", "status-password2");
+      return;
+    }
+    if (p1 === p2)
+      setValid(
+        "group-password2",
+        "feedback-password2",
+        "status-password2",
+        "✓ Passwords match",
+      );
+    else
+      setInvalid(
+        "group-password2",
+        "feedback-password2",
+        "status-password2",
+        "Passwords do not match",
+      );
+  }
+
+  // ── Submit Guard ──
+  document
+    .getElementById("register-form")
+    .addEventListener("submit", function (e) {
+      const u = document.getElementById("username").value.trim();
+      const em = document.getElementById("email").value.trim();
+      const p1 = document.getElementById("password1").value;
+      const p2 = document.getElementById("password2").value;
+      const emailRegex = /^[a-zA-Z][a-zA-Z0-9._%+-]*@[^\s@]+\.[^\s@]{2,}$/;
+      if (u.length < 3) {
+        e.preventDefault();
+        setInvalid(
+          "group-username",
+          "feedback-username",
+          "status-username",
+          "Username must be at least 3 characters",
+        );
+        return;
+      }
+      if (!emailRegex.test(em)) {
+        e.preventDefault();
+        setInvalid(
+          "group-email",
+          "feedback-email",
+          "status-email",
+          "Enter a valid email address",
+        );
+        return;
+      }
+      if (p1.length < 8) {
+        e.preventDefault();
+        document.getElementById("strength-label").style.color = "#e63946";
+        return;
+      }
+      if (p1 !== p2) {
+        e.preventDefault();
+        setInvalid(
+          "group-password2",
+          "feedback-password2",
+          "status-password2",
+          "Passwords do not match",
+        );
+        return;
+      }
+    });
+
+  // ── Helpers ──
+  function setValid(gId, fId, sId, msg) {
+    const g = document.getElementById(gId);
+    g.classList.remove("invalid");
+    g.classList.add("valid");
+    const f = document.getElementById(fId);
+    f.textContent = msg;
+    f.className = "field-feedback success";
+    document.getElementById(sId).textContent = "✅";
+  }
+  function setInvalid(gId, fId, sId, msg) {
+    const g = document.getElementById(gId);
+    g.classList.remove("valid");
+    g.classList.add("invalid");
+    const f = document.getElementById(fId);
+    f.textContent = msg;
+    f.className = "field-feedback error";
+    document.getElementById(sId).textContent = "❌";
+  }
+  function clearField(gId, fId, sId) {
+    document.getElementById(gId).classList.remove("valid", "invalid");
+    document.getElementById(fId).textContent = "";
+    document.getElementById(fId).className = "field-feedback";
+    document.getElementById(sId).textContent = "";
+  }
+
+  // ── Focus line animation ──
+  document.querySelectorAll(".input-field input").forEach((input) => {
+    input.addEventListener("focus", function () {
+      this.parentElement.querySelector(".input-line").style.width = "100%";
+    });
+    input.addEventListener("blur", function () {
+      const g = this.closest(".input-group");
+      if (!g.classList.contains("valid") && !g.classList.contains("invalid")) {
+        this.parentElement.querySelector(".input-line").style.width = "";
+      }
+    });
+  });
+</script>
+
+{% endblock %}

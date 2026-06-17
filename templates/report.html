@@ -1,0 +1,766 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="report-container">
+    <h2>Report an Incident</h2>
+    <p class="report-subtitle">Search a location or click the map to drop a pin</p>
+
+    <!-- Location Search Bar -->
+    <div class="loc-search-bar">
+        <div class="loc-search-wrapper" id="map-search-wrapper">
+            <span class="loc-search-icon">🔍</span>
+            <input
+                type="text"
+                id="map-location-search"
+                placeholder="Search city, street or landmark..."
+                autocomplete="off"
+            />
+            <div class="loc-dropdown" id="map-loc-dropdown"></div>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <div id="report-map"></div>
+    <p class="coords-display" id="coords-display">
+        📍 Click on the map or search above to select location
+    </p>
+
+    <form method="POST" id="report-form" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Incident Title</label>
+                <input type="text" name="title" required
+                       placeholder="e.g. Armed robbery at night"/>
+            </div>
+
+            <!-- Searchable Incident Type -->
+            <div class="form-group">
+                <label>Incident Type</label>
+                <div class="type-search-wrapper">
+                    <input type="text" id="type-search"
+                           placeholder="Search or type incident..."
+                           autocomplete="off" required/>
+                    <input type="hidden" name="type" id="type-value"/>
+                    <span class="type-search-icon">🔍</span>
+                    <div class="type-dropdown" id="type-dropdown">
+                        <div class="type-option" data-value="robbery">🔫 Robbery</div>
+                        <div class="type-option" data-value="harassment">⚠️ Harassment</div>
+                        <div class="type-option" data-value="accident">🚗 Accident</div>
+                        <div class="type-option" data-value="poor_lighting">💡 Poor Lighting</div>
+                        <div class="type-option" data-value="suspicious">👁️ Suspicious Activity</div>
+                        <div class="type-option" data-value="flood">🌊 Flood</div>
+                        <div class="type-option" data-value="fire">🔥 Fire</div>
+                        <div class="type-option" data-value="assault">👊 Assault</div>
+                        <div class="type-option" data-value="vandalism">🪟 Vandalism</div>
+                        <div class="type-option" data-value="kidnapping">🚨 Kidnapping</div>
+                        <div class="type-option type-other" data-value="other">➕ Other — type your own</div>
+                    </div>
+                </div>
+                <p class="type-hint" id="type-hint" style="display:none;">
+                    ✅ Type selected: <strong id="type-hint-label"></strong>
+                </p>
+                <p class="type-error" id="type-error" style="display:none;">
+                    ⚠️ Please select or enter an incident type
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label>Danger Level</label>
+                <select name="danger_level" required>
+                    <option value="1">🟢 Low</option>
+                    <option value="2">🟡 Medium</option>
+                    <option value="3">🔴 High</option>
+                </select>
+            </div>
+
+            <!-- Location Name with autocomplete -->
+            <div class="form-group">
+                <label>Location Name</label>
+                <div class="loc-search-wrapper" id="field-search-wrapper">
+                    <input
+                        type="text"
+                        name="location"
+                        id="location-field"
+                        required
+                        placeholder="Search or type location name..."
+                        autocomplete="off"
+                    />
+                    <div class="loc-dropdown" id="field-loc-dropdown"></div>
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label>Description</label>
+                <textarea name="description" rows="4" required
+                          placeholder="Describe what happened..."></textarea>
+            </div>
+
+            <input type="hidden" name="latitude"  id="latitude"  value=""/>
+            <input type="hidden" name="longitude" id="longitude" value=""/>
+
+        </div>
+
+        <!-- ── PHOTO UPLOAD ── -->
+        <div class="photo-upload-section">
+          <div class="photo-upload-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <div>
+              <h4>Attach Photos <span class="optional-tag">Optional</span></h4>
+              <p>Add photos to make your report more credible. Max 5 photos, 10MB each.</p>
+            </div>
+          </div>
+
+          <div class="photo-drop-zone" id="photo-drop-zone" onclick="document.getElementById('photo-input').click()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p>Click to upload or drag photos here</p>
+            <span>PNG, JPG, WEBP up to 10MB each</span>
+          </div>
+
+          <input type="file" id="photo-input" name="photos" multiple accept="image/*"
+                 style="display:none" onchange="handlePhotoSelect(this)"/>
+
+          <div class="photo-previews" id="photo-previews"></div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Submit Report
+        </button>
+        <p id="location-warning" class="error" style="display:none;">
+            ⚠️ Please select a location on the map or via search
+        </p>
+    </form>
+</div>
+
+<style>
+  /* ── Location Search Bar (above map) ── */
+  .loc-search-bar {
+    margin-bottom: 12px;
+  }
+
+  /* ── Shared location search wrapper ── */
+  .loc-search-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .loc-search-wrapper input[type="text"] {
+    width: 100%;
+    padding-left: 14px;
+    padding-right: 14px;
+    box-sizing: border-box;
+  }
+
+  /* Search icon inside map search bar */
+  #map-search-wrapper input {
+    padding-left: 38px;
+    font-size: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    color: var(--white);
+    transition: all 0.3s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #map-search-wrapper input:focus {
+    outline: none;
+    border-color: rgba(230,57,70,0.5);
+    background: rgba(255,255,255,0.08);
+  }
+  .loc-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* ── Location Dropdown ── */
+  .loc-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: rgba(15,17,32,0.98);
+    border: 1px solid rgba(230,57,70,0.3);
+    border-radius: 10px;
+    z-index: 9999;
+    max-height: 220px;
+    overflow-y: auto;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+  }
+  .loc-dropdown.open { display: block; }
+  .loc-dropdown::-webkit-scrollbar { width: 4px; }
+  .loc-dropdown::-webkit-scrollbar-thumb { background: rgba(230,57,70,0.3); border-radius: 4px; }
+
+  .loc-option {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: all 0.2s;
+  }
+  .loc-option:last-child { border-bottom: none; }
+  .loc-option:hover, .loc-option.highlighted {
+    background: rgba(230,57,70,0.12);
+    color: var(--white);
+    padding-left: 18px;
+  }
+  .loc-option-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+  .loc-option-text { display: flex; flex-direction: column; gap: 2px; }
+  .loc-option-name { font-weight: 600; font-size: 13px; color: var(--white); }
+  .loc-option-detail { font-size: 11px; color: var(--gray); }
+
+  .loc-searching {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--gray);
+    text-align: center;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .loc-no-results {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+  }
+
+  /* ── Type Search (unchanged) ── */
+  .type-search-wrapper { position: relative; }
+  .type-search-wrapper input[type="text"] { width: 100%; padding-right: 36px; box-sizing: border-box; }
+  .type-search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; opacity: 0.5; pointer-events: none; }
+  .type-dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: rgba(15,17,32,0.98); border: 1px solid rgba(230,57,70,0.3); border-radius: 10px; z-index: 999; max-height: 240px; overflow-y: auto; box-shadow: 0 12px 32px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+  .type-dropdown.open { display: block; }
+  .type-dropdown::-webkit-scrollbar { width: 4px; }
+  .type-dropdown::-webkit-scrollbar-thumb { background: rgba(230,57,70,0.3); border-radius: 4px; }
+  .type-option { padding: 11px 16px; font-size: 14px; color: rgba(255,255,255,0.75); cursor: pointer; transition: all 0.2s; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; align-items: center; gap: 8px; }
+  .type-option:last-child { border-bottom: none; }
+  .type-option:hover, .type-option.highlighted { background: rgba(230,57,70,0.12); color: var(--white); padding-left: 20px; }
+  .type-option.selected { background: rgba(230,57,70,0.18); color: #e63946; font-weight: 600; }
+  .type-other { border-top: 1px solid rgba(255,255,255,0.08) !important; color: rgba(255,255,255,0.5); font-style: italic; }
+  .type-other:hover { color: var(--white); font-style: normal; }
+  .type-no-results { padding: 14px 16px; font-size: 13px; color: rgba(255,255,255,0.35); text-align: center; }
+  .type-hint { font-size: 11px; color: #2ecc71; margin: 5px 0 0; }
+  .type-error { font-size: 11px; color: #e63946; margin: 5px 0 0; }
+
+  /* ── PHOTO UPLOAD ── */
+  .photo-upload-section {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--panel);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-lg);
+    margin-bottom: 20px;
+  }
+
+  .photo-upload-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+    color: var(--red);
+  }
+
+  .photo-upload-header h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--white);
+    margin: 0 0 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .optional-tag {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--gray);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    padding: 2px 8px;
+    letter-spacing: 0.3px;
+  }
+
+  .photo-upload-header p {
+    font-size: 0.78rem;
+    color: var(--gray);
+    margin: 0;
+  }
+
+  .photo-drop-zone {
+    border: 1.5px dashed var(--border-3);
+    border-radius: var(--radius-md);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s var(--ease);
+    color: var(--gray);
+  }
+
+  .photo-drop-zone:hover {
+    border-color: rgba(230,57,70,0.4);
+    background: var(--red-dim);
+    color: var(--off-white);
+  }
+
+  .photo-drop-zone.drag-over {
+    border-color: var(--red);
+    background: var(--red-dim);
+  }
+
+  .photo-drop-zone svg { margin-bottom: 10px; }
+  .photo-drop-zone p { font-size: 0.85rem; font-weight: 500; margin: 0 0 4px; }
+  .photo-drop-zone span { font-size: 0.72rem; color: var(--gray); }
+
+  .photo-previews {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .photo-preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-2);
+  }
+
+  .photo-preview-item img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+
+  .photo-preview-remove {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    transition: background 0.2s;
+  }
+
+  .photo-preview-remove:hover { background: var(--red); }
+
+  html.light .photo-upload-section {
+    background: #ffffff;
+    border-color: rgba(0,0,0,0.08);
+  }
+
+  html.light .optional-tag {
+    background: rgba(0,0,0,0.05);
+    border-color: rgba(0,0,0,0.1);
+    color: #64748b;
+  }
+
+</style>
+
+<script>
+    // ── Map Setup ──
+    const map = L.map('report-map').setView([6.5244, 3.3792], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = null;
+
+    const urlParams    = new URLSearchParams(window.location.search);
+    const initLat      = urlParams.get('lat');
+    const initLng      = urlParams.get('lng');
+    const initLocation = urlParams.get('location');
+    if (initLat && initLng) {
+        placeMarker(parseFloat(initLat), parseFloat(initLng), initLocation);
+        map.setView([parseFloat(initLat), parseFloat(initLng)], 16);
+    }
+
+    map.on('click', function(e) {
+        placeMarker(e.latlng.lat, e.latlng.lng, null);
+    });
+
+    function placeMarker(lat, lng, locationName) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map);
+        document.getElementById('latitude').value  = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+        document.getElementById('coords-display').innerHTML =
+            `✅ Location pinned: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        document.getElementById('coords-display').style.color = '#2ecc71';
+        document.getElementById('location-warning').style.display = 'none';
+
+        // Auto-fill location field if name provided
+        if (locationName) {
+            document.getElementById('location-field').value = locationName;
+        }
+    }
+
+    // ============================================
+    // LOCATION AUTOCOMPLETE — reusable function
+    // ============================================
+    let locSearchTimers = {};
+
+    function initLocationSearch(inputId, dropdownId, onSelect) {
+        const input    = document.getElementById(inputId);
+        const dropdown = document.getElementById(dropdownId);
+        let highlighted = -1;
+
+        input.addEventListener('input', function () {
+            const query = this.value.trim();
+            highlighted = -1;
+            if (query.length < 3) {
+                dropdown.classList.remove('open');
+                dropdown.innerHTML = '';
+                return;
+            }
+            // Debounce — wait 350ms after user stops typing
+            clearTimeout(locSearchTimers[inputId]);
+            locSearchTimers[inputId] = setTimeout(() => fetchLocations(query), 350);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            const opts = dropdown.querySelectorAll('.loc-option');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                highlighted = Math.min(highlighted + 1, opts.length - 1);
+                updateLocHighlight(opts, highlighted);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                highlighted = Math.max(highlighted - 1, 0);
+                updateLocHighlight(opts, highlighted);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (highlighted >= 0 && opts[highlighted]) opts[highlighted].click();
+            } else if (e.key === 'Escape') {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        function fetchLocations(query) {
+            dropdown.innerHTML = '<div class="loc-searching">🔍 Searching...</div>';
+            dropdown.classList.add('open');
+
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&addressdetails=1`)
+                .then(res => res.json())
+                .then(data => {
+                    dropdown.innerHTML = '';
+                    if (!data.length) {
+                        dropdown.innerHTML = '<div class="loc-no-results">No locations found. Try a different search.</div>';
+                        return;
+                    }
+                    data.forEach((place, i) => {
+                        const parts  = place.display_name.split(', ');
+                        const name   = parts.slice(0, 2).join(', ');
+                        const detail = parts.slice(2, 5).join(', ');
+                        const lat    = parseFloat(place.lat);
+                        const lon    = parseFloat(place.lon);
+
+                        const opt = document.createElement('div');
+                        opt.className = 'loc-option';
+                        opt.innerHTML = `
+                            <span class="loc-option-icon">📍</span>
+                            <span class="loc-option-text">
+                                <span class="loc-option-name">${name}</span>
+                                <span class="loc-option-detail">${detail}</span>
+                            </span>
+                        `;
+                        opt.addEventListener('click', function () {
+                            input.value = name;
+                            dropdown.classList.remove('open');
+                            dropdown.innerHTML = '';
+                            highlighted = -1;
+                            onSelect(lat, lon, name);
+                        });
+                        dropdown.appendChild(opt);
+                    });
+                    dropdown.classList.add('open');
+                })
+                .catch(() => {
+                    dropdown.innerHTML = '<div class="loc-no-results">Search failed. Check your connection.</div>';
+                });
+        }
+
+        function updateLocHighlight(opts, idx) {
+            opts.forEach((o, i) => o.classList.toggle('highlighted', i === idx));
+            if (opts[idx]) opts[idx].scrollIntoView({ block: 'nearest' });
+        }
+
+        // Close on outside click
+        document.addEventListener('click', function (e) {
+            if (!input.closest('.loc-search-wrapper').contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+    }
+
+    // ── Init: Map search bar (pins map only) ──
+    initLocationSearch('map-location-search', 'map-loc-dropdown', function (lat, lon, name) {
+        map.flyTo([lat, lon], 15, { animate: true, duration: 1.2 });
+        placeMarker(lat, lon, name);
+    });
+
+    // ── Init: Location field (fills field + pins map) ──
+    initLocationSearch('location-field', 'field-loc-dropdown', function (lat, lon, name) {
+        map.flyTo([lat, lon], 15, { animate: true, duration: 1.2 });
+        placeMarker(lat, lon, null); // don't overwrite field — already filled
+    });
+
+    // ============================================
+    // TYPE AUTOCOMPLETE (unchanged)
+    // ============================================
+    const allTypes = [
+        { value: 'robbery',       label: '🔫 Robbery' },
+        { value: 'harassment',    label: '⚠️ Harassment' },
+        { value: 'accident',      label: '🚗 Accident' },
+        { value: 'poor_lighting', label: '💡 Poor Lighting' },
+        { value: 'suspicious',    label: '👁️ Suspicious Activity' },
+        { value: 'flood',         label: '🌊 Flood' },
+        { value: 'fire',          label: '🔥 Fire' },
+        { value: 'assault',       label: '👊 Assault' },
+        { value: 'vandalism',     label: '🪟 Vandalism' },
+        { value: 'kidnapping',    label: '🚨 Kidnapping' },
+        { value: 'other',         label: '➕ Other — type your own' },
+    ];
+
+    const typeSearch   = document.getElementById('type-search');
+    const typeHidden   = document.getElementById('type-value');
+    const typeDropdown = document.getElementById('type-dropdown');
+    const typeHint     = document.getElementById('type-hint');
+    const typeHintLbl  = document.getElementById('type-hint-label');
+    const typeError    = document.getElementById('type-error');
+    let typeHighlight  = -1;
+    let customMode     = false;
+
+    typeSearch.addEventListener('focus', function () {
+        filterTypeDropdown(this.value);
+        typeDropdown.classList.add('open');
+    });
+
+    typeSearch.addEventListener('input', function () {
+        typeHidden.value = '';
+        typeHint.style.display = 'none';
+        typeError.style.display = 'none';
+        customMode = false;
+        typeHighlight = -1;
+        filterTypeDropdown(this.value.trim().toLowerCase());
+        typeDropdown.classList.add('open');
+    });
+
+    function filterTypeDropdown(query) {
+        const options = typeDropdown.querySelectorAll('.type-option');
+        const noRes   = typeDropdown.querySelector('.type-no-results');
+        if (noRes) noRes.remove();
+        let count = 0;
+        options.forEach(opt => {
+            const match = !query || opt.textContent.toLowerCase().includes(query) || opt.dataset.value.includes(query);
+            opt.style.display = match ? 'flex' : 'none';
+            if (match) count++;
+        });
+        if (count === 0 && query) {
+            const msg = document.createElement('div');
+            msg.className = 'type-no-results';
+            msg.textContent = `No match — press Enter to use "${query}"`;
+            typeDropdown.appendChild(msg);
+        }
+    }
+
+    typeDropdown.addEventListener('click', function (e) {
+        const opt = e.target.closest('.type-option');
+        if (!opt) return;
+        if (opt.dataset.value === 'other') {
+            customMode = true;
+            typeSearch.value = '';
+            typeSearch.placeholder = 'Type your incident type...';
+            typeHidden.value = '';
+            typeDropdown.classList.remove('open');
+            typeSearch.focus();
+            typeSearch.addEventListener('input', handleCustomType);
+        } else {
+            selectType(opt.dataset.value, opt.textContent.trim());
+        }
+    });
+
+    function handleCustomType() {
+        const val = typeSearch.value.trim();
+        if (val.length > 0) {
+            typeHidden.value    = val.toLowerCase().replace(/\s+/g, '_');
+            typeHintLbl.textContent = val;
+            typeHint.style.display  = 'block';
+            typeError.style.display = 'none';
+        }
+    }
+
+    typeSearch.addEventListener('keydown', function (e) {
+        const opts = [...typeDropdown.querySelectorAll('.type-option:not([style*="none"])')];
+        if (e.key === 'ArrowDown')  { e.preventDefault(); typeHighlight = Math.min(typeHighlight+1, opts.length-1); updateTypeHighlight(opts); }
+        else if (e.key === 'ArrowUp')   { e.preventDefault(); typeHighlight = Math.max(typeHighlight-1, 0); updateTypeHighlight(opts); }
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (typeHighlight >= 0 && opts[typeHighlight]) opts[typeHighlight].click();
+            else if (typeSearch.value.trim()) {
+                const val = typeSearch.value.trim();
+                typeHidden.value = val.toLowerCase().replace(/\s+/g, '_');
+                typeHintLbl.textContent = val;
+                typeHint.style.display  = 'block';
+                typeDropdown.classList.remove('open');
+            }
+        } else if (e.key === 'Escape') { typeDropdown.classList.remove('open'); }
+    });
+
+    function updateTypeHighlight(opts) {
+        opts.forEach((o, i) => o.classList.toggle('highlighted', i === typeHighlight));
+    }
+
+    function selectType(value, label) {
+        typeHidden.value       = value;
+        typeSearch.value       = label.replace(/^\S+\s/, '');
+        typeHintLbl.textContent = label.replace(/^\S+\s/, '');
+        typeHint.style.display  = 'block';
+        typeError.style.display = 'none';
+        typeDropdown.classList.remove('open');
+        typeHighlight = -1;
+        customMode    = false;
+        typeSearch.removeEventListener('input', handleCustomType);
+        typeSearch.placeholder = 'Search or type incident...';
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.type-search-wrapper')) typeDropdown.classList.remove('open');
+    });
+
+    // ── Submit Guard ──
+    document.getElementById('submit-btn').addEventListener('click', function(e) {
+        const lat  = document.getElementById('latitude').value;
+        const lng  = document.getElementById('longitude').value;
+        const type = document.getElementById('type-value').value;
+        if (!lat || !lng) {
+            e.preventDefault();
+            document.getElementById('location-warning').style.display = 'block';
+            return;
+        }
+        if (!type) {
+            e.preventDefault();
+            typeError.style.display = 'block';
+            typeSearch.focus();
+            return;
+        }
+    });
+
+  // ── Photo Upload Handling ──
+  let selectedFiles = [];
+
+  function handlePhotoSelect(input) {
+    const files = Array.from(input.files);
+    const remaining = 5 - selectedFiles.length;
+    const toAdd = files.slice(0, remaining);
+
+    toAdd.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name} is too large. Max 10MB per photo.`);
+        return;
+      }
+      selectedFiles.push(file);
+      renderPreview(file, selectedFiles.length - 1);
+    });
+
+    // Reset input so same file can be re-selected
+    input.value = '';
+  }
+
+  function renderPreview(file, index) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const container = document.getElementById('photo-previews');
+      const item = document.createElement('div');
+      item.className = 'photo-preview-item';
+      item.id = `preview-${index}`;
+      item.innerHTML = `
+        <img src="${e.target.result}" alt="preview"/>
+        <button type="button" class="photo-preview-remove" onclick="removePhoto(${index})">✕</button>
+      `;
+      container.appendChild(item);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removePhoto(index) {
+    selectedFiles[index] = null;
+    const item = document.getElementById(`preview-${index}`);
+    if (item) item.remove();
+  }
+
+  // Drag and drop
+  const dropZone = document.getElementById('photo-drop-zone');
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const dt = e.dataTransfer;
+    const input = document.getElementById('photo-input');
+    // Create fake event
+    const files = Array.from(dt.files).filter(f => f.type.startsWith('image/'));
+    const remaining = 5 - selectedFiles.length;
+    files.slice(0, remaining).forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name} is too large. Max 10MB.`);
+        return;
+      }
+      selectedFiles.push(file);
+      renderPreview(file, selectedFiles.length - 1);
+    });
+  });
+
+  // Override form submit to attach selected files
+  document.getElementById('report-form').addEventListener('submit', function(e) {
+    // Remove nulls
+    const validFiles = selectedFiles.filter(f => f !== null);
+    if (validFiles.length > 0) {
+      // Create a new DataTransfer to set files on input
+      const dt = new DataTransfer();
+      validFiles.forEach(f => dt.items.add(f));
+      document.getElementById('photo-input').files = dt.files;
+    }
+  });
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="incidents-header">
+    <div>
+        <h2>All Reported Incidents</h2>
+        <p class="subtitle">
+            {% if active_type %}
+                {{ page_obj.paginator.count }} incident(s) matching filter
+            {% else %}
+                {{ page_obj.paginator.count }} total incident(s) reported
+            {% endif %}
+        </p>
+    </div>
+    <a href="{% url 'report' %}" class="btn-report"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Report New</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <a href="{% url 'incidents' %}"
+       class="filter-tag {% if not active_type %}active{% endif %}">
+       All
+    </a>
+    <a href="?type=robbery"
+       class="filter-tag {% if active_type == 'robbery' %}active{% endif %}">
+       Robbery
+    </a>
+    <a href="?type=harassment"
+       class="filter-tag {% if active_type == 'harassment' %}active{% endif %}">
+       Harassment
+    </a>
+    <a href="?type=accident"
+       class="filter-tag {% if active_type == 'accident' %}active{% endif %}">
+       Accident
+    </a>
+    <a href="?type=poor_lighting"
+       class="filter-tag {% if active_type == 'poor_lighting' %}active{% endif %}">
+       Poor Lighting
+    </a>
+    <a href="?type=suspicious"
+       class="filter-tag {% if active_type == 'suspicious' %}active{% endif %}">
+       Suspicious
+    </a>
+    <a href="?type=flood"
+       class="filter-tag {% if active_type == 'flood' %}active{% endif %}">
+       Flood
+    </a>
+    <a href="?type=fire"
+       class="filter-tag {% if active_type == 'fire' %}active{% endif %}">
+       Fire
+    </a>
+    <a href="?type=assault"
+       class="filter-tag {% if active_type == 'assault' %}active{% endif %}">
+       Assault
+    </a>
+    <a href="?type=other"
+       class="filter-tag {% if active_type == 'other' %}active{% endif %}">
+       Other
+    </a>
+</div>
+
+
+{% if incidents %}
+<div class="incidents-grid">
+    {% for incident in incidents %}
+    <div class="incident-card danger-{{ incident.danger_level }}">
+        <div class="incident-card-header">
+            <span class="incident-type">{{ incident.get_type_display }}</span>
+            <span class="danger-badge level-{{ incident.danger_level }}">
+                {% if incident.danger_level == 1 %}Low
+                {% elif incident.danger_level == 2 %} Medium
+                {% else %} High{% endif %}
+            </span>
+        </div>
+        <h3 class="incident-title">{{ incident.title }}</h3>
+        <p class="incident-desc">{{ incident.description|truncatechars:120 }}</p>
+        <div class="incident-meta">
+            <span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> {{ incident.location }}</span>
+            <span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> {{ incident.reported_by.username }}</span>
+            <span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {{ incident.timestamp|date:"M d, Y H:i" }}</span>
+        </div>
+        <div class="incident-footer">
+            {% if incident.verified %}
+            <span class="verified-badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Verified</span>
+            {% else %}
+            <span class="pending-badge"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Pending</span>
+            {% endif %}
+            <a href="{% url 'incident_detail' incident.id %}" class="view-detail-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> View
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="pagination-wrapper">
+
+    <div class="pagination-info">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        &nbsp;·&nbsp;
+        {{ page_obj.paginator.count }} total
+    </div>
+
+    <div class="pagination-controls">
+
+        <!-- First -->
+        {% if page_obj.has_previous %}
+        <a href="?{% if active_type %}type={{ active_type }}&{% endif %}page=1"
+           class="page-btn page-edge" title="First page">
+           «
+        </a>
+        {% endif %}
+
+        <!-- Previous -->
+        {% if page_obj.has_previous %}
+        <a href="?{% if active_type %}type={{ active_type }}&{% endif %}page={{ page_obj.previous_page_number }}"
+           class="page-btn">
+           ‹ Prev
+        </a>
+        {% endif %}
+
+        <!-- Page Numbers -->
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="page-btn page-current">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?{% if active_type %}type={{ active_type }}&{% endif %}page={{ num }}"
+                   class="page-btn">
+                   {{ num }}
+                </a>
+            {% endif %}
+        {% endfor %}
+
+        <!-- Next -->
+        {% if page_obj.has_next %}
+        <a href="?{% if active_type %}type={{ active_type }}&{% endif %}page={{ page_obj.next_page_number }}"
+           class="page-btn">
+           Next ›
+        </a>
+        {% endif %}
+
+        <!-- Last -->
+        {% if page_obj.has_next %}
+        <a href="?{% if active_type %}type={{ active_type }}&{% endif %}page={{ page_obj.paginator.num_pages }}"
+           class="page-btn page-edge" title="Last page">
+           »
+        </a>
+        {% endif %}
+
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="no-incidents">
+    <p>No incidents reported yet.</p>
+    <a href="{% url 'report' %}" class="btn-primary">Be the first to report</a>
+</div>
+{% endif %}
+
+<style>
+  /* ── Pagination ── */
+  .pagination-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: 40px;
+    padding: 24px 0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .pagination-info {
+    font-size: 12px;
+    color: var(--gray);
+    letter-spacing: 0.3px;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.7);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .page-btn:hover {
+    background: rgba(230,57,70,0.12);
+    border-color: rgba(230,57,70,0.35);
+    color: var(--white);
+    transform: translateY(-1px);
+  }
+
+  .page-current {
+    background: linear-gradient(135deg, #e63946, #c1121f);
+    border-color: #e63946;
+    color: white;
+    font-weight: 700;
+    cursor: default;
+    box-shadow: 0 4px 12px rgba(230,57,70,0.3);
+  }
+
+  .page-current:hover {
+    transform: none;
+    background: linear-gradient(135deg, #e63946, #c1121f);
+  }
+
+  .page-edge {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.4);
+  }
+
+  .page-edge:hover {
+    color: var(--white);
+  }
+
+  /* ── Active filter fix ── */
+  .filter-tag.active {
+    background: rgba(230,57,70,0.2) !important;
+    border-color: rgba(230,57,70,0.6) !important;
+    color: #fff !important;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .pagination-controls { gap: 4px; }
+    .page-btn { min-width: 34px; height: 34px; font-size: 12px; padding: 0 8px; }
+    .page-edge { display: none; }
+  }
+</style>
+
+{% endblock %}

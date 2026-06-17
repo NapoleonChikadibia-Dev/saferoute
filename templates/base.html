@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeRoute — Navigate Safely</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <script>
+    // Apply theme before render to prevent flash
+    (function() {
+      if (localStorage.getItem('saferoute_theme') === 'light') {
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    /* Hide page content until preloader finishes */
+    html.preloader-active body > *:not(#preloader):not(#particle-canvas) {
+      visibility: hidden;
+    }
+    html.preloader-active body {
+      overflow: hidden;
+    }
+  </style>
+  <script>
+    (function() {
+      var p = window.location.pathname;
+      if (p === '/' || p === '/login/' || p === '/register/') {
+        document.documentElement.className += ' preloader-active';
+      }
+    })();
+  </script>
+</head>
+
+<body>
+
+  <!-- ============================================================
+       PRELOADER
+  ============================================================ -->
+  <div id="preloader">
+    <div class="preloader-inner">
+
+      <!-- Logo -->
+      <div class="preloader-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+             stroke-linejoin="round" class="preloader-shield">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span class="preloader-brand"><span>Safe</span>Route</span>
+      </div>
+
+      <!-- Rotating taglines -->
+      <div class="preloader-tagline-wrap">
+        <span class="preloader-tagline" id="preloader-tagline">
+          We are all about your safety
+        </span>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="preloader-bar-wrap">
+        <div class="preloader-bar" id="preloader-bar"></div>
+      </div>
+
+      <!-- Scanning dots -->
+      <div class="preloader-dots">
+        <span></span><span></span><span></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PARTICLE CANVAS BACKGROUND
+  ============================================================ -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ============================================================
+       NAVBAR
+  ============================================================ -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round" class="nav-brand-icon">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      <span>Safe</span>Route
+    </div>
+
+    {% if user.is_authenticated %}
+    <div class="nav-links">
+      <a href="{% url 'map' %}" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+          <line x1="9" y1="3" x2="9" y2="18"/>
+          <line x1="15" y1="6" x2="15" y2="21"/>
+        </svg>
+        Map
+      </a>
+      <a href="{% url 'report' %}" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        Report
+      </a>
+      <a href="{% url 'incidents' %}" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/>
+          <line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        Incidents
+      </a>
+      <a href="{% url 'feed' %}" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+          <line x1="7" y1="2" x2="7" y2="22"/>
+          <line x1="17" y1="2" x2="17" y2="22"/>
+          <line x1="2" y1="12" x2="22" y2="12"/>
+          <line x1="2" y1="7" x2="7" y2="7"/>
+          <line x1="2" y1="17" x2="7" y2="17"/>
+          <line x1="17" y1="17" x2="22" y2="17"/>
+          <line x1="17" y1="7" x2="22" y2="7"/>
+        </svg>
+        Feed
+      </a>
+
+      <div class="nav-user">
+        <a href="{% url 'profile' %}" class="nav-link nav-profile">
+          {% if user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="avatar" class="nav-avatar"
+                 width="28" height="28" loading="eager"/>
+          {% else %}
+            <span class="nav-avatar-placeholder">{{ user.username|first|upper }}</span>
+          {% endif %}
+          {{ user.username }}
+        </a>
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+        </button>
+
+        <form method="POST" action="{% url 'logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="logout-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Logout
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <button class="mobile-menu-btn" onclick="toggleMenu()">
+      <svg id="menu-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    {% endif %}
+  </nav>
+
+  {% if user.is_authenticated %}
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="{% url 'map' %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round">
+        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+        <line x1="9" y1="3" x2="9" y2="18"/>
+        <line x1="15" y1="6" x2="15" y2="21"/>
+      </svg>
+      Map
+    </a>
+    <a href="{% url 'report' %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/>
+        <line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      Report
+    </a>
+    <a href="{% url 'incidents' %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6"/>
+        <line x1="8" y1="12" x2="21" y2="12"/>
+        <line x1="8" y1="18" x2="21" y2="18"/>
+        <line x1="3" y1="6" x2="3.01" y2="6"/>
+        <line x1="3" y1="12" x2="3.01" y2="12"/>
+        <line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
+      Incidents
+    </a>
+    <a href="{% url 'profile' %}" class="nav-profile">
+      {% if user.profile.avatar %}
+        <img src="{{ user.profile.avatar.url }}" alt="avatar" class="nav-avatar"
+             width="28" height="28" loading="eager"/>
+      {% else %}
+        <span class="nav-avatar-placeholder">{{ user.username|first|upper }}</span>
+      {% endif %}
+      {{ user.username }}
+    </a>
+    <form method="POST" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="mobile-logout-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Logout
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="container">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+      <span>{{ message }}</span>
+      <button class="alert-close" onclick="this.parentElement.remove()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+             stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+
+  {% if user.is_authenticated %}
+  <div class="sos-container">
+    <button class="sos-btn" onclick="triggerSOS()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+           stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      SOS
+    </button>
+  </div>
+  {% endif %}
+
+  <style>
+    /* ── Particle Canvas ── */
+    #particle-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* ── Preloader ── */
+    #preloader {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+
+    /* Light mode preloader adjustments */
+    html.light #preloader .preloader-brand { color: var(--off-white); }
+    html.light #preloader .preloader-tagline { color: var(--gray); }
+    html.light #preloader .preloader-bar-wrap { background: rgba(0,0,0,0.08); }
+
+    #preloader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .preloader-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+      padding: 0 24px;
+    }
+
+    .preloader-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .preloader-shield {
+      color: #e63946;
+      filter: drop-shadow(0 0 12px rgba(230,57,70,0.6));
+      animation: shieldPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes shieldPulse {
+      0%, 100% { filter: drop-shadow(0 0 12px rgba(230,57,70,0.6)); }
+      50%       { filter: drop-shadow(0 0 24px rgba(230,57,70,0.9)); }
+    }
+
+    .preloader-brand {
+      font-family: 'Syne', 'Inter', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #ffffff;
+    }
+
+    .preloader-brand span { color: #e63946; }
+
+    .preloader-tagline-wrap {
+      height: 32px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .preloader-tagline {
+      display: block;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      animation: taglineFade 0.5s ease;
+    }
+
+    @keyframes taglineFade {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .preloader-bar-wrap {
+      width: 240px;
+      height: 2px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .preloader-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #e63946, #4f8ef7);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+      box-shadow: 0 0 8px rgba(230,57,70,0.5);
+    }
+
+    .preloader-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .preloader-dots span {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #e63946;
+      animation: dotBounce 1.2s ease-in-out infinite;
+    }
+
+    .preloader-dots span:nth-child(2) { animation-delay: 0.2s; background: #4f8ef7; }
+    .preloader-dots span:nth-child(3) { animation-delay: 0.4s; background: #10b981; }
+
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40%           { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* ── Navbar styles ── */
+    .nav-brand-icon { color: #e63946; flex-shrink: 0; }
+
+    .nav-profile { display: flex; align-items: center; gap: 8px; }
+
+    .nav-avatar {
+      width: 28px; height: 28px;
+      min-width: 28px; min-height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(230,57,70,0.4);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: block;
+      aspect-ratio: 1 / 1;
+      background: rgba(230,57,70,0.15);
+    }
+
+    .nav-avatar-placeholder {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e63946, #c1121f);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+      border: 2px solid rgba(230,57,70,0.4);
+      flex-shrink: 0;
+    }
+
+    .logout-btn { display: inline-flex; align-items: center; gap: 6px; }
+    .mobile-logout-btn { display: flex; align-items: center; gap: 10px; }
+
+    .alert-close {
+      background: none; border: none; cursor: pointer;
+      color: #64748b;
+      display: flex; align-items: center; justify-content: center;
+      padding: 4px; border-radius: 4px; transition: all 0.2s;
+    }
+    .alert-close:hover { color: #e63946; background: rgba(230,57,70,0.1); }
+
+    .sos-btn { display: flex; align-items: center; gap: 7px; }
+  </style>
+
+  <script>
+    // ============================================================
+    // PRELOADER — only on landing, login, register
+    // ============================================================
+    var preloader = document.getElementById('preloader');
+    var p = window.location.pathname;
+    var show = (p === '/' || p === '/login/' || p === '/register/');
+
+    if (!show) {
+      if (preloader) preloader.remove();
+    } else {
+      const taglines = [
+        "We are all about your safety",
+        "Move with trust, move with confidence",
+        "Real-time incidents. Real-world awareness.",
+        "Your community's eyes on the ground",
+        "Navigate smarter. Stay safer.",
+        "Built for the streets. Powered by people.",
+        "Because every route should be a safe one",
+      ];
+
+      let taglineIndex = 0;
+      let progress     = 0;
+
+      const taglineEl   = document.getElementById('preloader-tagline');
+      const progressBar = document.getElementById('preloader-bar');
+
+      const taglineTimer = setInterval(() => {
+        taglineIndex = (taglineIndex + 1) % taglines.length;
+        taglineEl.style.animation = 'none';
+        taglineEl.offsetHeight;
+        taglineEl.style.animation = 'taglineFade 0.5s ease';
+        taglineEl.textContent = taglines[taglineIndex];
+      }, 700);
+
+      const progressTimer = setInterval(() => {
+        progress += 2.5;
+        progressBar.style.width = Math.min(progress, 100) + '%';
+        if (progress >= 100) {
+          clearInterval(progressTimer);
+          clearInterval(taglineTimer);
+          setTimeout(() => {
+            preloader.classList.add('hidden');
+            // Reveal page content
+            document.documentElement.classList.remove('preloader-active');
+            document.body.classList.remove('preloader-active');
+            setTimeout(() => preloader.remove(), 600);
+          }, 200);
+        }
+      }, 70);
+    }
+
+    // ============================================================
+    // PARTICLE NETWORK BACKGROUND
+    // ============================================================
+    const canvas  = document.getElementById('particle-canvas');
+    const ctx     = canvas.getContext('2d');
+
+    let W, H, particles, mouse = { x: -999, y: -999 };
+
+    const CONFIG = {
+      count:        80,
+      speed:        0.35,
+      maxDist:      140,
+      radius:       1.8,
+      colors:       ['#e63946', '#4f8ef7', '#10b981', '#f59e0b'],
+      lineOpacity:  0.12,
+      mouseRadius:  160,
+    };
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    function createParticles() {
+      particles = Array.from({ length: CONFIG.count }, () => ({
+        x:    Math.random() * W,
+        y:    Math.random() * H,
+        vx:   (Math.random() - 0.5) * CONFIG.speed,
+        vy:   (Math.random() - 0.5) * CONFIG.speed,
+        r:    Math.random() * CONFIG.radius + 0.8,
+        color: CONFIG.colors[Math.floor(Math.random() * CONFIG.colors.length)],
+        opacity: Math.random() * 0.5 + 0.3,
+      }));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Update + draw particles
+      particles.forEach(p => {
+        // Mouse attraction
+        const dx = mouse.x - p.x;
+        const dy = mouse.y - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < CONFIG.mouseRadius) {
+          const force = (CONFIG.mouseRadius - dist) / CONFIG.mouseRadius;
+          p.vx += dx * force * 0.0006;
+          p.vy += dy * force * 0.0006;
+        }
+
+        // Speed cap
+        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (speed > CONFIG.speed * 2.5) {
+          p.vx = (p.vx / speed) * CONFIG.speed * 2.5;
+          p.vy = (p.vy / speed) * CONFIG.speed * 2.5;
+        }
+
+        // Move
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Bounce off edges
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+
+        // Draw dot
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + Math.floor(p.opacity * 255).toString(16).padStart(2, '0');
+        ctx.fill();
+      });
+
+      // Draw connecting lines
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a  = particles[i];
+          const b  = particles[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const d  = Math.sqrt(dx * dx + dy * dy);
+
+          if (d < CONFIG.maxDist) {
+            const opacity = (1 - d / CONFIG.maxDist) * CONFIG.lineOpacity;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `rgba(79,142,247,${opacity})`;
+            ctx.lineWidth   = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    // Mouse tracking
+    document.addEventListener('mousemove', e => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    document.addEventListener('mouseleave', () => {
+      mouse.x = -999;
+      mouse.y = -999;
+    });
+
+    window.addEventListener('resize', () => {
+      resize();
+      createParticles();
+    });
+
+    resize();
+    createParticles();
+    draw();
+
+    // ============================================================
+    // MOBILE MENU
+    // ============================================================
+    function toggleMenu() {
+      const menu = document.getElementById('mobileMenu');
+      const icon = document.getElementById('menu-icon');
+      if (!menu) return;
+      menu.classList.toggle('active');
+
+      if (menu.classList.contains('active')) {
+        icon.innerHTML = `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`;
+        document.body.style.overflow = 'hidden';
+      } else {
+        icon.innerHTML = `<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>`;
+        document.body.style.overflow = '';
+      }
+    }
+
+    document.querySelectorAll('.mobile-menu a').forEach(link => {
+      link.addEventListener('click', () => {
+        const menu = document.getElementById('mobileMenu');
+        const icon = document.getElementById('menu-icon');
+        if (!menu) return;
+        menu.classList.remove('active');
+        icon.innerHTML = `<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>`;
+        document.body.style.overflow = '';
+      });
+    });
+
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 768) {
+        const menu = document.getElementById('mobileMenu');
+        const icon = document.getElementById('menu-icon');
+        if (menu && menu.classList.contains('active')) {
+          menu.classList.remove('active');
+          icon.innerHTML = `<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>`;
+          document.body.style.overflow = '';
+        }
+      }
+    });
+
+    // ============================================================
+    // SOS
+    // ============================================================
+    function triggerSOS() {
+      const sosPhone = "{{ user.profile.sos_phone|default:'' }}";
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          let msg = `SOS ACTIVATED\n\nYour location:\nLat: ${lat}\nLng: ${lng}\n\nCall emergency services: 112 / 911 / 999`;
+          if (sosPhone) msg += `\n\nYour emergency contact: ${sosPhone}`;
+          alert(msg);
+        }, function () {
+          alert('SOS ACTIVATED\nCall emergency services: 112 / 911 / 999 immediately!');
+        });
+      } else {
+        alert('SOS ACTIVATED\nCall emergency services: 112 / 911 / 999 immediately!');
+      }
+    }
+
+    // Auto-dismiss alerts
+    setTimeout(function () {
+      document.querySelectorAll('.alert').forEach(a => a.remove());
+    }, 4500);
+
+    // ============================================================
+    // THEME TOGGLE
+    // ============================================================
+    (function() {
+      // Apply saved theme immediately on load
+      const saved = localStorage.getItem('saferoute_theme');
+      if (saved === 'light') {
+        document.documentElement.classList.add('light');
+      }
+    })();
+
+    function toggleTheme() {
+      const html    = document.documentElement;
+      const isLight = html.classList.toggle('light');
+      localStorage.setItem('saferoute_theme', isLight ? 'light' : 'dark');
+    }
+
+    // ============================================================
+    // LANDING PAGE — mark navigation to login/register
+    // so preloader is skipped on those pages after Get Started
+    // ============================================================
+    if (window.location.pathname === '/') {
+      document.querySelectorAll('a[href*="/login/"], a[href*="/register/"]').forEach(link => {
+        link.addEventListener('click', function() {
+          sessionStorage.setItem('saferoute_from_landing', '1');
+        });
+      });
+    }
+  </script>
+
+</body>
+</html>

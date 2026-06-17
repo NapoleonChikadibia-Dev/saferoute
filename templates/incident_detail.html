@@ -1,0 +1,568 @@
+{% extends 'base.html' %} {% block content %}
+
+<div class="detail-container">
+  <!-- Back Button -->
+  <a href="{% url 'incidents' %}" class="back-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Back</a>
+
+  <!-- Incident Card -->
+  <div class="detail-card danger-{{ incident.danger_level }}">
+    <div class="detail-header">
+      <div>
+        <span class="incident-type">{{ incident.get_type_display }}</span>
+        <h1 class="detail-title">{{ incident.title }}</h1>
+        <p class="detail-location"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> {{ incident.location }}</p>
+      </div>
+      <div class="detail-badges">
+        <span class="danger-badge level-{{ incident.danger_level }}">
+          {% if incident.danger_level == 1 %}Low Risk {% elif
+          incident.danger_level == 2 %}Medium Risk {% else %}High Risk{%endif %}
+        </span>
+        <span class="verified-badge" id="verified-badge"
+              style="{% if not incident.verified %}display:none;{% endif %}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Verified by Community
+        </span>
+        <span class="pending-badge" id="pending-badge"
+              style="{% if incident.verified %}display:none;{% endif %}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Pending
+        </span>
+      </div>
+
+      {% if user == incident.reported_by %}
+      <div class="owner-actions">
+        <a href="{% url 'edit_incident' incident.id %}" class="btn-edit">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit
+        </a>
+        <button class="btn-delete-sm" onclick="confirmDelete()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete
+        </button>
+
+        <form
+          method="POST"
+          action="{% url 'delete_incident' incident.id %}"
+          id="delete-form"
+          style="display: none"
+        >
+          {% csrf_token %}
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="detail-meta">
+      <span
+        ><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Reported by
+        <strong>{{ incident.reported_by.username }}</strong></span
+      >
+      <span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {{ incident.timestamp|date:"F d, Y H:i" }}</span>
+      <span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> {{ comments|length }} comment(s)</span>
+      <span><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.66 0 3.22.45 4.56 1.24"/></svg> <span id="meta-confirm-count">{{ confirm_count }}</span> confirmed · <span id="meta-dispute-count">{{ dispute_count }}</span> disputed</span>
+    </div>
+
+    <div class="detail-description">
+      <h3>Description</h3>
+      <p>{{ incident.description }}</p>
+    </div>
+
+    <!-- ── MEDIA GALLERY ── -->
+    {% with photos=incident.media.all %}
+    {% if photos %}
+    <div class="media-gallery">
+      <div class="gallery-label">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        Attached Photos ({{ photos|length }})
+      </div>
+      <div class="gallery-grid">
+        {% for photo in photos %}
+        <div class="gallery-item" onclick="openLightbox('{{ photo.file.url }}')">
+          <img src="{{ photo.file.url }}" alt="Incident photo {{ forloop.counter }}"
+               loading="lazy"/>
+          <div class="gallery-item-overlay">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+      <button class="lightbox-close" onclick="closeLightbox()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <img id="lightbox-img" src="" alt="Full size" onclick="event.stopPropagation()"/>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- ── MAP ── -->
+    <div class="detail-map-label">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round">
+        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+        <line x1="9" y1="3" x2="9" y2="18"/>
+        <line x1="15" y1="6" x2="15" y2="21"/>
+      </svg>
+      Incident Location
+    </div>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <div id="detail-map"></div>
+
+    <!-- Trust / Verification Panel -->
+    <div class="trust-panel">
+      <div class="trust-prompt">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Were you there? Help verify this report.
+      </div>
+
+      <div class="trust-actions">
+        <button class="trust-btn confirm-btn {% if has_confirmed %}active{% endif %}"
+                id="confirm-btn"
+                onclick="sendTrust('confirm', {{ incident.id }})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          <span class="trust-btn-label">{% if has_confirmed %}Confirmed{% else %}Confirm{% endif %}</span>
+          <span class="trust-count" id="confirm-count">{{ confirm_count }}</span>
+        </button>
+
+        <button class="trust-btn dispute-btn {% if has_disputed %}active{% endif %}"
+                id="dispute-btn"
+                onclick="sendTrust('dispute', {{ incident.id }})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span class="trust-btn-label">{% if has_disputed %}Disputed{% else %}Dispute{% endif %}</span>
+          <span class="trust-count" id="dispute-count">{{ dispute_count }}</span>
+        </button>
+      </div>
+
+      <div class="trust-meter">
+        <span class="trust-net-label">Trust score</span>
+        <span class="trust-net" id="trust-net">{{ net_score }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comments Section -->
+  <div class="comments-section">
+    <h2>
+      Community Experiences
+      <span class="comment-count">({{ comments|length }})</span>
+    </h2>
+
+    <!-- Comment Form -->
+    <div class="comment-form-card">
+      <h3>Share Your Experience</h3>
+      <p class="comment-subtitle">
+        Have you experienced something similar here? Help your community by
+        sharing what you know.
+      </p>
+      <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">{{ comment_form.body }}</div>
+        <button type="submit" class="btn-comment"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> Post Comment</button>
+      </form>
+    </div>
+
+    <!-- Comments List -->
+    {% if comments %} {% for comment in comments %}
+    <div class="comment-card">
+      <div class="comment-header">
+        <div class="comment-avatar">
+          {{ comment.author.username|first|upper }}
+        </div>
+        <div class="comment-meta">
+          <strong>{{ comment.author.username }}</strong>
+          <span class="comment-time">
+            {{ comment.timestamp|date:"M d, Y H:i" }}
+          </span>
+        </div>
+      </div>
+      <p class="comment-body">{{ comment.body }}</p>
+    </div>
+    {% endfor %} {% else %}
+    <div class="no-comments">
+      <p>No comments yet — be the first to share.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  /* ── MEDIA GALLERY ── */
+  .media-gallery {
+    margin-bottom: 20px;
+  }
+
+  .gallery-label,
+  .detail-map-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gray);
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .gallery-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid var(--border-2);
+    background: var(--panel-2);
+  }
+
+  .gallery-item img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s var(--ease);
+  }
+
+  .gallery-item-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: white;
+  }
+
+  .gallery-item:hover img { transform: scale(1.05); }
+  .gallery-item:hover .gallery-item-overlay { opacity: 1; }
+
+  .detail-map-label { margin-top: 20px; }
+
+  /* Lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0,0,0,0.92);
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+
+  .lightbox.open { display: flex; }
+
+  .lightbox img {
+    max-width: 90vw;
+    max-height: 88vh;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .lightbox-close:hover { background: rgba(230,57,70,0.4); }
+
+  .owner-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    align-items: center;
+  }
+
+  .btn-edit {
+    padding: 8px 18px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: var(--white);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn-edit:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .btn-delete-sm {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid rgba(230, 57, 70, 0.4);
+    border-radius: 8px;
+    color: #e63946;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn-delete-sm:hover {
+    background: rgba(230, 57, 70, 0.1);
+    border-color: #e63946;
+  }
+
+  /* ── TRUST / VERIFICATION PANEL ── */
+  .trust-panel {
+    margin-top: 24px;
+    padding: 20px;
+    border: 1px solid var(--border-2, rgba(255,255,255,0.1));
+    border-radius: var(--radius-md, 12px);
+    background: var(--panel-2, rgba(255,255,255,0.03));
+  }
+
+  .trust-prompt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--gray, #9aa);
+    margin-bottom: 16px;
+    font-family: var(--font-mono, monospace);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .trust-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .trust-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s var(--ease, ease);
+    background: transparent;
+    flex: 1;
+    justify-content: center;
+    min-width: 130px;
+  }
+
+  .trust-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    border-radius: 11px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: rgba(255,255,255,0.1);
+  }
+
+  /* Confirm — cyber green/teal */
+  .confirm-btn {
+    border: 1px solid rgba(46, 204, 113, 0.4);
+    color: #2ecc71;
+  }
+  .confirm-btn:hover {
+    background: rgba(46, 204, 113, 0.1);
+    border-color: rgba(46, 204, 113, 0.7);
+    box-shadow: 0 0 16px rgba(46, 204, 113, 0.2);
+  }
+  .confirm-btn.active {
+    background: rgba(46, 204, 113, 0.16);
+    border-color: #2ecc71;
+    box-shadow: 0 0 18px rgba(46, 204, 113, 0.3);
+  }
+  .confirm-btn.active .trust-count {
+    background: rgba(46, 204, 113, 0.35);
+  }
+
+  /* Dispute — alert amber/red */
+  .dispute-btn {
+    border: 1px solid rgba(243, 156, 18, 0.4);
+    color: #f39c12;
+  }
+  .dispute-btn:hover {
+    background: rgba(243, 156, 18, 0.1);
+    border-color: rgba(243, 156, 18, 0.7);
+    box-shadow: 0 0 16px rgba(243, 156, 18, 0.2);
+  }
+  .dispute-btn.active {
+    background: rgba(243, 156, 18, 0.16);
+    border-color: #f39c12;
+    box-shadow: 0 0 18px rgba(243, 156, 18, 0.3);
+  }
+  .dispute-btn.active .trust-count {
+    background: rgba(243, 156, 18, 0.35);
+  }
+
+  .trust-meter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .trust-net-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gray, #9aa);
+    font-family: var(--font-mono, monospace);
+  }
+
+  .trust-net {
+    font-size: 1.4rem;
+    font-weight: 800;
+    font-family: var(--font-mono, monospace);
+    color: var(--white, #fff);
+  }
+</style>
+
+<script>
+  // Mini map showing incident location
+  const map = L.map('detail-map').setView(
+      [{{ incident.latitude }}, {{ incident.longitude }}], 15
+  );
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  const colors = { 1: '#2ecc71', 2: '#f39c12', 3: '#e63946' };
+  const color  = colors[{{ incident.danger_level }}] || '#e63946';
+
+  L.circleMarker(
+      [{{ incident.latitude }}, {{ incident.longitude }}],
+      {
+          radius: 14, fillColor: color,
+          color: '#fff', weight: 2,
+          opacity: 1, fillOpacity: 0.9
+      }
+  ).addTo(map).bindPopup(
+      '<strong>{{ incident.title }}</strong><br/>{{ incident.location }}'
+  ).openPopup();
+
+  // Confirm / Dispute trust actions
+  function sendTrust(action, incidentId) {
+      fetch(`/incidents/${incidentId}/${action}/`, {
+          method: 'POST',
+          headers: {
+              'X-CSRFToken': '{{ csrf_token }}',
+              'Content-Type': 'application/json',
+          },
+      })
+      .then(res => {
+          if (res.status === 401 || res.status === 403) {
+              window.location.href = "{% url 'login' %}?from=incident";
+              return null;
+          }
+          return res.json();
+      })
+      .then(data => {
+          if (!data) return;
+
+          const confirmBtn   = document.getElementById('confirm-btn');
+          const disputeBtn   = document.getElementById('dispute-btn');
+          const confirmLabel = confirmBtn.querySelector('.trust-btn-label');
+          const disputeLabel = disputeBtn.querySelector('.trust-btn-label');
+
+          // Update counts (both, since one action can clear the other)
+          document.getElementById('confirm-count').textContent = data.confirm_count;
+          document.getElementById('dispute-count').textContent = data.dispute_count;
+          document.getElementById('trust-net').textContent     = data.net_score;
+          document.getElementById('meta-confirm-count').textContent = data.confirm_count;
+          document.getElementById('meta-dispute-count').textContent = data.dispute_count;
+
+          // Update active states + labels
+          if (data.confirmed) {
+              confirmBtn.classList.add('active');  confirmLabel.textContent = 'Confirmed';
+          } else {
+              confirmBtn.classList.remove('active'); confirmLabel.textContent = 'Confirm';
+          }
+          if (data.disputed) {
+              disputeBtn.classList.add('active');  disputeLabel.textContent = 'Disputed';
+          } else {
+              disputeBtn.classList.remove('active'); disputeLabel.textContent = 'Dispute';
+          }
+
+          // Live verified badge toggle
+          const verifiedBadge = document.getElementById('verified-badge');
+          const pendingBadge  = document.getElementById('pending-badge');
+          if (data.verified) {
+              verifiedBadge.style.display = '';
+              pendingBadge.style.display  = 'none';
+          } else {
+              verifiedBadge.style.display = 'none';
+              pendingBadge.style.display  = '';
+          }
+      });
+  }
+
+  function openLightbox(url) {
+    document.getElementById('lightbox-img').src = url;
+    document.getElementById('lightbox').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function confirmDelete() {
+      const confirmed = confirm(
+          '⚠️ Are you sure you want to delete this report?\n\nThis action cannot be undone.'
+      );
+      if (confirmed) {
+          document.getElementById('delete-form').submit();
+      }
+  }   
+
+</script>
+
+{% endblock %}

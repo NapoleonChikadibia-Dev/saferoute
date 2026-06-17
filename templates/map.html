@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <span class="stat-number">{{ incidents|length }}</span>
+        <span class="stat-label">Total Reports</span>
+    </div>
+    <div class="stat-item red">
+        <span class="stat-number">{{ incidents|length }}</span>
+        <span class="stat-label">Active Alerts</span>
+    </div>
+    <div class="stat-item green">
+        <span class="stat-number">24/7</span>
+        <span class="stat-label">Monitoring</span>
+    </div>
+    <div class="stat-item blue">
+        <span class="stat-number"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></span>
+        <span class="stat-label">Global Coverage</span>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="map-search-bar">
+    <div class="loc-search-wrapper" id="map-search-wrapper">
+        <span class="loc-search-icon-map"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="Search any city, street or place worldwide..."
+            autocomplete="off"
+        />
+        <div class="loc-dropdown" id="map-loc-dropdown"></div>
+    </div>
+</div>
+
+<!-- Map Header -->
+<div class="map-header">
+    <h2>SafeRoute Live Map</h2>
+    <div class="map-controls">
+        <button class="filter-btn active" onclick="filterMarkers('all', event)">All</button>
+        <button class="filter-btn" onclick="filterMarkers('robbery', event)">Robbery</button>
+        <button class="filter-btn" onclick="filterMarkers('harassment', event)">Harassment</button>
+        <button class="filter-btn" onclick="filterMarkers('accident', event)">Accident</button>
+        <button class="filter-btn" onclick="filterMarkers('poor_lighting', event)">Lighting</button>
+        <button class="filter-btn" onclick="filterMarkers('suspicious', event)">Suspicious</button>
+        <a href="{% url 'report' %}" class="btn-report"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Report Incident</a>
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="map-legend">
+    <span class="legend-item">Low Risk</span>
+    <span class="legend-item">Medium Risk</span>
+    <span class="legend-item">High Risk</span>
+    <span class="legend-item">Heatmap Zone</span>
+</div>
+
+<!-- Main Layout: Map + News Sidebar -->
+<div class="map-layout">
+
+    <!-- Left: Map + Incidents -->
+    <div class="map-main">
+
+        <!-- Map -->
+        <div id="map"></div>
+
+        <!-- Recent Incidents -->
+        <div class="incident-summary">
+            <div class="summary-header">
+                <h3>Recent Incidents</h3>
+                <a href="{% url 'incidents' %}" class="view-all-link">View All</a>
+            </div>
+
+            {% if incidents %}
+                <div class="summary-grid">
+                {% for incident in incidents|slice:":6" %}
+                <div class="incident-card danger-{{ incident.danger_level }}">
+                    <div class="incident-card-header">
+                        <span class="incident-type">
+                            {{ incident.get_type_display }}
+                        </span>
+                        <span class="incident-time">
+                            {{ incident.timestamp|date:"M d, H:i" }}
+                        </span>
+                    </div>
+                    <p class="incident-title">{{ incident.title }}</p>
+                    <p class="incident-location"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> {{ incident.location }}</p>
+                    <div class="incident-footer">
+                        <span class="danger-badge level-{{ incident.danger_level }}">
+                            {% if incident.danger_level == 1 %}Low{% elif incident.danger_level == 2 %}Medium{% else %}High{% endif %}
+                        </span>
+                        <a href="{% url 'incident_detail' incident.id %}"
+                           class="view-detail-btn">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> View
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-incidents">
+                    <p>No incidents reported yet.</p>
+                    <a href="{% url 'report' %}" class="btn-report">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Report Incident
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: News Sidebar -->
+    <div class="news-sidebar">
+
+        <div class="news-sidebar-header">
+            <h3>Safety News</h3>
+            <span class="news-live-badge"><svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10"/></svg> Live</span>
+        </div>
+
+        <!-- Region Search -->
+        <div class="news-region-search">
+            <form method="GET" action="{% url 'map' %}">
+                <input type="text"
+                       name="region"
+                       placeholder="Filter news by city/country..."
+                       value="{{ request.GET.region }}"/>
+                <button type="submit">Go</button>
+            </form>
+        </div>
+
+        {% if news_articles %}
+            <div class="news-list">
+            {% for article in news_articles %}
+            <a href="{{ article.url }}"
+               target="_blank"
+               class="news-card">
+                {% if article.image %}
+                <img src="{{ article.image }}"
+                     alt="news"
+                     class="news-image"
+                     onerror="this.style.display='none'"/>
+                {% endif %}
+                <div class="news-content">
+                    <span class="news-source">
+                        {{ article.source }} · {{ article.published }}
+                    </span>
+                    <p class="news-title">{{ article.title }}</p>
+                    {% if article.description %}
+                    <p class="news-desc">{{ article.description }}...</p>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+            </div>
+        {% else %}
+            <div class="news-empty">
+                <p>Loading news...</p>
+                <p style="font-size:0.8rem;margin-top:8px;color:#555">
+                    Make sure your NEWS_API_KEY is set in settings.py
+                </p>
+            </div>
+        {% endif %}
+
+        <p class="news-footer">
+            Powered by <a href="https://newsapi.org" target="_blank">NewsAPI</a>
+        </p>
+    </div>
+
+</div>
+
+<style>
+    /* Location search dropdown styles — add to map.html or style.css */
+  .map-search-bar .loc-search-wrapper { position: relative; width: 100%; }
+
+  .loc-search-icon-map {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  #searchInput {
+    padding-left: 40px !important;
+  }
+
+  .loc-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: rgba(15,17,32,0.98);
+    border: 1px solid rgba(230,57,70,0.3);
+    border-radius: 10px;
+    z-index: 9999;
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+  }
+  .loc-dropdown.open { display: block; }
+  .loc-dropdown::-webkit-scrollbar { width: 4px; }
+  .loc-dropdown::-webkit-scrollbar-thumb { background: rgba(230,57,70,0.3); border-radius: 4px; }
+
+  .loc-option {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: all 0.2s;
+  }
+  .loc-option:last-child { border-bottom: none; }
+  .loc-option:hover, .loc-option.highlighted {
+    background: rgba(230,57,70,0.12);
+    color: var(--white);
+    padding-left: 18px;
+  }
+  .loc-option-icon  { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+  .loc-option-text  { display: flex; flex-direction: column; gap: 2px; }
+  .loc-option-name  { font-weight: 600; font-size: 13px; color: var(--white); }
+  .loc-option-detail{ font-size: 11px; color: var(--gray); }
+
+  .loc-searching {
+    padding: 12px 16px; font-size: 12px;
+    color: var(--gray); text-align: center;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .loc-no-results {
+    padding: 12px 16px; font-size: 12px;
+    color: rgba(255,255,255,0.3); text-align: center;
+  }
+</style>
+
+<script>
+    // Initialize map — global view
+    const map = L.map('map').setView([20, 0], 2);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const incidents = {{ incidents_json|safe }};
+
+    const colors = {
+        1: '#2ecc71',
+        2: '#f39c12',
+        3: '#e63946',
+    };
+
+    const dangerLabels = {
+        1: 'Low Risk',
+        2: 'Medium Risk',
+        3: 'High Risk',
+    };
+
+    const heatData   = [];
+    const allMarkers = [];
+
+    incidents.forEach(function(incident) {
+        const color = colors[incident.danger_level] || '#e63946';
+        const label = dangerLabels[incident.danger_level] || 'Unknown';
+
+        const marker = L.circleMarker(
+            [incident.latitude, incident.longitude],
+            {
+                radius:      12,
+                fillColor:   color,
+                color:       '#fff',
+                weight:      2,
+                opacity:     1,
+                fillOpacity: 0.9
+            }
+        ).addTo(map);
+
+        marker.incidentType = incident.type;
+
+        marker.bindPopup(`
+            <div class="popup-content">
+                <h4>${incident.title}</h4>
+                <hr/>
+                <p><strong>Type:</strong> ${incident.type}</p>
+                <p><strong>Risk:</strong>
+                    <span style="color:${color};font-weight:bold">
+                        ${label}
+                    </span>
+                </p>
+                <p>${incident.location}</p>
+                <p>${incident.description}</p>
+                <p><strong>By:</strong> ${incident.reported_by}</p>
+                <p><strong>Time:</strong> ${incident.timestamp}</p>
+                <p>${incident.likes} likes</p>
+                <a href="${incident.detail_url}"
+                   style="background:#e63946;color:#fff;padding:6px 14px;
+                          border-radius:6px;text-decoration:none;
+                          display:inline-block;margin-top:8px">
+                   View & Comment
+                </a>
+            </div>
+        `);
+
+        allMarkers.push(marker);
+        heatData.push([
+            incident.latitude,
+            incident.longitude,
+            incident.danger_level * 0.4
+        ]);
+    });
+
+    if (heatData.length > 0) {
+        L.heatLayer(heatData, {
+            radius:  35,
+            blur:    25,
+            maxZoom: 17,
+            gradient: { 0.2: 'green', 0.5: 'yellow', 0.8: 'red' }
+        }).addTo(map);
+    }
+
+    function filterMarkers(type, event) {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        if (event) event.target.classList.add('active');
+        allMarkers.forEach(function(marker) {
+            if (type === 'all' || marker.incidentType === type) {
+                marker.addTo(map);
+            } else {
+                map.removeLayer(marker);
+            }
+        });
+    }
+
+       // ── Replace handleSearch and searchLocation with this ──
+
+    let mapSearchTimer = null;
+    let mapHighlight   = -1;
+
+    const mapSearchInput  = document.getElementById('searchInput');
+    const mapLocDropdown  = document.getElementById('map-loc-dropdown');
+
+    mapSearchInput.addEventListener('input', function () {
+        const query = this.value.trim();
+        mapHighlight = -1;
+        if (query.length < 3) {
+            mapLocDropdown.classList.remove('open');
+            mapLocDropdown.innerHTML = '';
+            return;
+        }
+        clearTimeout(mapSearchTimer);
+        mapSearchTimer = setTimeout(() => fetchMapLocations(query), 350);
+    });
+
+    mapSearchInput.addEventListener('keydown', function (e) {
+        const opts = mapLocDropdown.querySelectorAll('.loc-option');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            mapHighlight = Math.min(mapHighlight + 1, opts.length - 1);
+            updateMapHighlight(opts);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            mapHighlight = Math.max(mapHighlight - 1, 0);
+            updateMapHighlight(opts);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (mapHighlight >= 0 && opts[mapHighlight]) opts[mapHighlight].click();
+        } else if (e.key === 'Escape') {
+            mapLocDropdown.classList.remove('open');
+        }
+    });
+
+    function fetchMapLocations(query) {
+        mapLocDropdown.innerHTML = '<div class="loc-searching">🔍 Searching...</div>';
+        mapLocDropdown.classList.add('open');
+
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&addressdetails=1`)
+            .then(res => res.json())
+            .then(data => {
+                mapLocDropdown.innerHTML = '';
+                if (!data.length) {
+                    mapLocDropdown.innerHTML = '<div class="loc-no-results">No locations found.</div>';
+                    return;
+                }
+                data.forEach(place => {
+                    const parts  = place.display_name.split(', ');
+                    const name   = parts.slice(0, 2).join(', ');
+                    const detail = parts.slice(2, 5).join(', ');
+                    const lat    = parseFloat(place.lat);
+                    const lon    = parseFloat(place.lon);
+
+                    const opt = document.createElement('div');
+                    opt.className = 'loc-option';
+                    opt.innerHTML = `
+                        <span class="loc-option-icon">📍</span>
+                        <span class="loc-option-text">
+                            <span class="loc-option-name">${name}</span>
+                            <span class="loc-option-detail">${detail}</span>
+                        </span>
+                    `;
+                    opt.addEventListener('click', function () {
+                        mapSearchInput.value = name;
+                        mapLocDropdown.classList.remove('open');
+                        mapLocDropdown.innerHTML = '';
+                        mapHighlight = -1;
+
+                        map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
+
+                        L.popup()
+                            .setLatLng([lat, lon])
+                            .setContent(`
+                                <div style="text-align:center">
+                                    <p>📍 <strong>${name}</strong></p>
+                                    <p style="color:#aaa;font-size:0.8rem">Check markers for incidents here</p>
+                                    <a href="/report/?lat=${lat}&lng=${lon}&location=${encodeURIComponent(name)}"
+                                       style="background:#e63946;color:#fff;padding:6px 14px;
+                                              border-radius:6px;text-decoration:none;
+                                              display:inline-block;margin-top:8px">
+                                       Report Here
+                                    </a>
+                                </div>
+                            `)
+                            .openOn(map);
+                    });
+                    mapLocDropdown.appendChild(opt);
+                });
+                mapLocDropdown.classList.add('open');
+            })
+            .catch(() => {
+                mapLocDropdown.innerHTML = '<div class="loc-no-results">Search failed. Check your connection.</div>';
+            });
+    }
+
+    function updateMapHighlight(opts) {
+        opts.forEach((o, i) => o.classList.toggle('highlighted', i === mapHighlight));
+        if (opts[mapHighlight]) opts[mapHighlight].scrollIntoView({ block: 'nearest' });
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('#map-search-wrapper')) {
+            mapLocDropdown.classList.remove('open');
+        }
+    });
+</script>
+
+{% endblock %}

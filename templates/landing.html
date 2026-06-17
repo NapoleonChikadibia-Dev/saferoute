@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafeRoute Navigate Safely. Everywhere You Go.</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  <script>
+    // Apply saved theme before render — prevents flash
+    (function() {
+      if (localStorage.getItem('saferoute_theme') === 'light') {
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
+  </head>
+
+  <body class="landing-body">
+    <!-- NAVBAR -->
+    <nav class="landing-nav">
+      <div class="nav-brand"><span>Safe</span>Route</div>
+      <div class="landing-nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How It Works</a>
+        <a href="{% url 'login' %}">Login</a>
+
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+        </button>
+
+        <a href="{% url 'register' %}" class="btn-report">Get Started</a>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-eyebrow">🌍 Global Community Safety Platform</div>
+        <h1>
+          Navigate<br /><span class="highlight">Safely</span><br />Everywhere
+        </h1>
+        <p class="hero-subtitle">
+          Real-time crowd-sourced incident reporting mapped globally. Know the
+          danger before you walk into it.
+        </p>
+        <div class="hero-buttons">
+          <a href="{% url 'register' %}" class="btn-hero-primary"
+            >Launch App →</a
+          >
+          <a href="#how" class="btn-hero-secondary">See How It Works</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <strong>Real-Time</strong>
+            <span>Live Reports</span>
+          </div>
+          <div class="hero-stat">
+            <strong>Global</strong>
+            <span>Every City</span>
+          </div>
+          <div class="hero-stat">
+            <strong>Free</strong>
+            <span>Always</span>
+          </div>
+          <div class="hero-stat">
+            <strong>$0</strong>
+            <span>Infrastructure</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submarine Navigator Radar Visual -->
+      <!-- Submarine Navigator Radar Visual -->
+      <!-- Submarine Navigator Radar Visual -->
+      <div class="hero-visual">
+        <div class="radar-container">
+          <!-- Radar Screen -->
+          <div class="radar-screen">
+            <!-- Outer Rings -->
+            <div class="radar-ring ring-1"></div>
+            <div class="radar-ring ring-2"></div>
+            <div class="radar-ring ring-3"></div>
+            <div class="radar-ring ring-4"></div>
+
+            <!-- Crosshairs -->
+            <div class="radar-crosshair horizontal"></div>
+            <div class="radar-crosshair vertical"></div>
+
+            <!-- Scanning Line -->
+            <div class="radar-scan"></div>
+
+            <!-- Location Blips (Dots with pulses) -->
+            <div class="radar-blip blip-1" style="top: 28%; left: 35%">
+              <div class="blip-pulse"></div>
+              <div class="blip-dot red"></div>
+              <span class="blip-label">High Risk</span>
+            </div>
+
+            <div class="radar-blip blip-2" style="top: 52%; left: 65%">
+              <div class="blip-pulse"></div>
+              <div class="blip-dot yellow"></div>
+              <span class="blip-label">Medium Risk</span>
+            </div>
+
+            <div class="radar-blip blip-3" style="top: 68%; left: 28%">
+              <div class="blip-pulse"></div>
+              <div class="blip-dot green"></div>
+              <span class="blip-label">Low Risk</span>
+            </div>
+
+            <div class="radar-blip blip-4" style="top: 18%; left: 72%">
+              <div class="blip-pulse"></div>
+              <div class="blip-dot red"></div>
+              <span class="blip-label">Active Threat</span>
+            </div>
+
+            <div class="radar-blip blip-5" style="top: 75%; left: 68%">
+              <div class="blip-pulse"></div>
+              <div class="blip-dot blue"></div>
+              <span class="blip-label">Suspicious</span>
+            </div>
+
+            <div class="radar-blip blip-6" style="top: 42%; left: 20%">
+              <div class="blip-pulse"></div>
+              <div class="blip-dot yellow"></div>
+              <span class="blip-label">Watch Area</span>
+            </div>
+
+            <div class="radar-blip blip-7" style="top: 82%; left: 45%">
+              <div class="blip-pulse"></div>
+              <div class="blip-dot orange"></div>
+              <span class="blip-label">Monitoring</span>
+            </div>
+
+            <!-- Center Dot -->
+            <div class="radar-center">
+              <div class="center-pulse"></div>
+              <div class="center-dot"></div>
+            </div>
+
+            <!-- Radar Screen Glow -->
+            <div class="radar-glow"></div>
+
+            <!-- Grid Lines -->
+            <div class="radar-grid"></div>
+          </div>
+
+          <!-- Status Bar -->
+          <div class="radar-status">
+            <div class="status-left">
+              <span class="status-led red"></span>
+              <span>SCANNING ACTIVE</span>
+            </div>
+            <div class="status-center">
+              <span>🛰️ 12 DETECTIONS</span>
+            </div>
+            <div class="status-right">
+              <span>⚡ REAL-TIME</span>
+            </div>
+          </div>
+
+          <!-- Bottom Decoration -->
+          <div class="radar-footer">
+            <div class="wave-line"></div>
+            <div class="wave-line"></div>
+            <div class="wave-line"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features" id="features">
+      <div class="text-center">
+        <div class="section-label">Core Features</div>
+        <h2>Everything You Need<br />To Stay Safe</h2>
+        <p class="features-subtitle">
+          A unified safety intelligence platform built for communities worldwide
+        </p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-wrap">🗺️</div>
+          <h3>Live Safety Map</h3>
+          <p>
+            Interactive global map with color-coded incident markers and
+            real-time danger heatmap overlay. See what's happening around you
+            instantly.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">🚨</div>
+          <h3>Instant Reporting</h3>
+          <p>
+            Click any point on the map to report. Capture exact coordinates,
+            incident type, danger level and description in seconds.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">🔥</div>
+          <h3>Danger Heatmap</h3>
+          <p>
+            Visual concentration zones updated in real-time as reports come in.
+            Identify high-risk areas before you travel through them.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">💬</div>
+          <h3>Community Intel</h3>
+          <p>
+            Comment and share experiences on every report. Community
+            verification creates a crowd-sourced trust layer for every incident.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">🆘</div>
+          <h3>SOS Emergency</h3>
+          <p>
+            One-tap emergency button captures your live GPS coordinates and
+            triggers an instant alert. Your safety net when it matters most.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon-wrap">📰</div>
+          <h3>Regional News Feed</h3>
+          <p>
+            Live safety news sidebar filtered by your searched location. Connect
+            local community reports with global safety context.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how-it-works" id="how">
+      <div class="section-label center-label">How It Works</div>
+      <h2>From Registration<br />To Safety In Minutes</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">01</div>
+          <h3>Create Account</h3>
+          <p>
+            Sign up free in seconds. Your account is secured with
+            industry-standard password hashing.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-number">02</div>
+          <h3>View Live Map</h3>
+          <p>
+            Instantly see real-time incidents plotted globally. Search any city,
+            street or location worldwide.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-number">03</div>
+          <h3>Report Incidents</h3>
+          <p>
+            Click the map at the exact location. Fill in the details. Your
+            report goes live immediately.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-number">04</div>
+          <h3>Stay Safe</h3>
+          <p>
+            Navigate with real intelligence. Use SOS when needed. Help your
+            community stay informed.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <div class="section-label center-label">Get Started</div>
+      <h2>Ready To Navigate<br />With Confidence?</h2>
+      <p>Join a global community making streets safer one report at a time.</p>
+      <a href="{% url 'register' %}" class="btn-hero-primary"
+        >Launch SafeRoute →</a
+      >
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p style="margin-bottom: 8px">
+        🛡️ <strong style="color: var(--off-white)">SafeRoute</strong>
+        Community-Powered · Real-Time · Global · Free
+      </p>
+      <p>
+        Built with Django + Leaflet.js + OpenStreetMap · Zero proprietary APIs
+      </p>
+    </footer>
+  </body>
+
+  <script>
+    // ============================================================
+    // SUBMARINE RADAR EFFECTS - SAFEROUTE
+    // Sonar Ping + Live Blip Simulation
+    // ============================================================
+
+    (function () {
+      "use strict";
+
+      // --------------------------------------------------------
+      // 1. HOVER EFFECT FOR RADAR BLIPS (Visual Flash)
+      // --------------------------------------------------------
+      function initBlipHoverEffects() {
+        const blips = document.querySelectorAll(".radar-blip");
+        blips.forEach((blip) => {
+          blip.addEventListener("mouseenter", () => {
+            // Scale up the blip on hover
+            blip.style.transform = "translate(-50%, -50%) scale(1.3)";
+            blip.style.transition = "transform 0.2s ease";
+
+            // Reset after 200ms
+            setTimeout(() => {
+              blip.style.transform = "translate(-50%, -50%) scale(1)";
+            }, 200);
+          });
+        });
+      }
+
+      // --------------------------------------------------------
+      // 2. SONAR PING SOUND (Web Audio API)
+      // Requires user interaction first (browser security)
+      // --------------------------------------------------------
+      let audioContext = null;
+      let sonarInterval = null;
+      let sonarEnabled = false;
+
+      function playSonarPing() {
+        if (!audioContext) {
+          try {
+            audioContext = new (
+              window.AudioContext || window.webkitAudioContext
+            )();
+          } catch (e) {
+            console.log("Web Audio API not supported");
+            return;
+          }
+        }
+
+        // Resume context if suspended (browser autoplay policy)
+        if (audioContext.state === "suspended") {
+          audioContext.resume();
+        }
+
+        const now = audioContext.currentTime;
+
+        // Create oscillator for the ping sound
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // High-pitched sonar ping
+        oscillator.frequency.value = 900;
+        oscillator.type = "sine";
+
+        // Quick volume envelope
+        gainNode.gain.setValueAtTime(0.15, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.00001, now + 0.8);
+
+        oscillator.start();
+        oscillator.stop(now + 0.8);
+
+        // Optional: Add a subtle visual flash on the radar when ping plays
+        const radarScreen = document.querySelector(".radar-screen");
+        if (radarScreen) {
+          radarScreen.style.boxShadow = "0 0 50px rgba(230, 57, 70, 0.6)";
+          setTimeout(() => {
+            radarScreen.style.boxShadow = "0 0 30px rgba(230, 57, 70, 0.3)";
+          }, 200);
+        }
+      }
+
+      // Silent version - no audio
+      function enableSonarPing() {
+        if (sonarEnabled) return;
+
+        // Just visual flash without sound
+        setInterval(() => {
+          const radarScreen = document.querySelector(".radar-screen");
+          if (radarScreen) {
+            radarScreen.style.boxShadow = "0 0 50px rgba(230, 57, 70, 0.6)";
+            setTimeout(() => {
+              radarScreen.style.boxShadow = "0 0 30px rgba(230, 57, 70, 0.3)";
+            }, 200);
+          }
+        }, 4000);
+
+        sonarEnabled = true;
+      }
+
+      // --------------------------------------------------------
+      // 3. LIVE BLIP SIMULATION (New threats appearing randomly)
+      // --------------------------------------------------------
+      let blipInterval = null;
+      let blipEnabled = false;
+
+      // Threat labels for new blips
+      const threatLabels = [
+        "NEW THREAT",
+        "ALERT",
+        "DETECTED",
+        "ACTIVE",
+        "WATCH",
+        "SUSPICIOUS",
+      ];
+
+      // Colors for new blips
+      const threatColors = ["red", "yellow", "orange"];
+
+      function getRandomThreat() {
+        return {
+          label: threatLabels[Math.floor(Math.random() * threatLabels.length)],
+          color: threatColors[Math.floor(Math.random() * threatColors.length)],
+        };
+      }
+
+      function addRandomBlip() {
+        const radarScreen = document.querySelector(".radar-screen");
+        if (!radarScreen) return;
+
+        // Random position within the radar circle (avoid edges)
+        const randomTop = Math.random() * 70 + 15;
+        const randomLeft = Math.random() * 70 + 15;
+        const threat = getRandomThreat();
+
+        // Create new blip element
+        const newBlip = document.createElement("div");
+        newBlip.className = "radar-blip";
+        newBlip.style.position = "absolute";
+        newBlip.style.top = `${randomTop}%`;
+        newBlip.style.left = `${randomLeft}%`;
+        newBlip.style.transform = "translate(-50%, -50%)";
+        newBlip.style.cursor = "pointer";
+        newBlip.style.zIndex = "10";
+
+        // Add animation style
+        newBlip.style.animation = "blipPop 0.5s ease-out";
+
+        newBlip.innerHTML = `
+                <div class="blip-pulse" style="animation: blipPulse 2s ease-out infinite"></div>
+                <div class="blip-dot ${threat.color}" style="background: var(--${threat.color === "orange" ? "#ff6b35" : threat.color}); box-shadow: 0 0 15px currentColor;"></div>
+                <span class="blip-label">${threat.label}</span>
+            `;
+
+        // Add hover effect to new blip
+        newBlip.addEventListener("mouseenter", () => {
+          newBlip.style.transform = "translate(-50%, -50%) scale(1.3)";
+          setTimeout(() => {
+            newBlip.style.transform = "translate(-50%, -50%) scale(1)";
+          }, 200);
+        });
+
+        radarScreen.appendChild(newBlip);
+
+        // Auto-remove blip after 8 seconds (simulating resolved threat)
+        setTimeout(() => {
+          if (newBlip && newBlip.parentNode) {
+            newBlip.style.transition = "opacity 0.5s ease";
+            newBlip.style.opacity = "0";
+            setTimeout(() => {
+              if (newBlip && newBlip.parentNode) {
+                newBlip.remove();
+              }
+            }, 500);
+          }
+        }, 8000);
+      }
+
+      function enableLiveBlips() {
+        if (blipEnabled) return;
+
+        // Start random blips every 5-10 seconds
+        blipInterval = setInterval(
+          () => {
+            addRandomBlip();
+          },
+          Math.random() * 5000 + 5000,
+        ); // Random interval between 5-10 seconds
+
+        blipEnabled = true;
+        console.log("🎯 Live blip simulation enabled");
+      }
+
+      // --------------------------------------------------------
+      // 4. INITIALIZE ALL EFFECTS (With User Interaction)
+      // --------------------------------------------------------
+
+      // Track if effects have been started
+      let effectsStarted = false;
+
+      function startAllRadarEffects() {
+        if (effectsStarted) return;
+
+        // Initialize hover effects (always active)
+        initBlipHoverEffects();
+
+        // Enable sonar ping (requires user interaction for audio)
+        enableSonarPing();
+
+        // Enable live blips
+        enableLiveBlips();
+
+        effectsStarted = true;
+        console.log("🚢 SafeRoute Radar Systems ONLINE");
+      }
+
+      // Start effects on first user interaction (click, touch, or keypress)
+      // This satisfies browser autoplay policies for audio
+      const startEvents = ["click", "touchstart", "keydown"];
+
+      function handleUserInteraction() {
+        startAllRadarEffects();
+        // Remove listeners after first interaction
+        startEvents.forEach((event) => {
+          document.removeEventListener(event, handleUserInteraction);
+        });
+      }
+
+      // Add event listeners for user interaction
+      startEvents.forEach((event) => {
+        document.addEventListener(event, handleUserInteraction);
+      });
+
+      // Also initialize non-audio effects immediately (hover only)
+      // This runs after DOM is ready
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => {
+          initBlipHoverEffects();
+        });
+      } else {
+        initBlipHoverEffects();
+      }
+
+      // --------------------------------------------------------
+      // 5. UPDATE STATUS COUNTER (Live detection count)
+      // --------------------------------------------------------
+      function updateDetectionCount() {
+        const statusCenter = document.querySelector(".status-center span");
+        if (!statusCenter) return;
+
+        const countBlips = () => {
+          const blips = document.querySelectorAll(".radar-blip");
+          return blips.length;
+        };
+
+        // Update every 2 seconds
+        setInterval(() => {
+          const count = countBlips();
+          statusCenter.innerHTML = `🛰️ ${count} DETECTIONS`;
+        }, 2000);
+      }
+
+      // Run after DOM ready
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", updateDetectionCount);
+      } else {
+        updateDetectionCount();
+      }
+
+      // ── Theme Toggle ──
+      window.toggleTheme = function() {
+        const isLight = document.documentElement.classList.toggle('light');
+        localStorage.setItem('saferoute_theme', isLight ? 'light' : 'dark');
+      };
+
+      // --------------------------------------------------------
+      // 6. CLEANUP (Optional - for single page apps)
+      // --------------------------------------------------------
+      window.cleanupRadarEffects = function () {
+        if (sonarInterval) clearInterval(sonarInterval);
+        if (blipInterval) clearInterval(blipInterval);
+        if (audioContext) audioContext.close();
+        sonarEnabled = false;
+        blipEnabled = false;
+        effectsStarted = false;
+        console.log("🔇 Radar effects cleaned up");
+      };
+    })();
+  </script>
+</html>

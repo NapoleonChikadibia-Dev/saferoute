@@ -1,0 +1,289 @@
+{% extends 'base.html' %} {% load static %} {% block content %}
+
+<div class="auth-wrapper">
+  <div class="pattern-bg"></div>
+
+  <div class="auth-card-unified">
+    <!-- Radar Section -->
+    <div class="radar-section">
+      <div class="radar-display">
+        <div class="radar-screen">
+          <div class="radar-ring ring-1"></div>
+          <div class="radar-ring ring-2"></div>
+          <div class="radar-ring ring-3"></div>
+          <div class="radar-ring ring-4"></div>
+          <div class="radar-crosshair horizontal"></div>
+          <div class="radar-crosshair vertical"></div>
+          <div class="radar-scan"></div>
+          <div class="radar-blip" style="top: 28%; left: 35%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot red"></div>
+          </div>
+          <div class="radar-blip" style="top: 52%; left: 65%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot yellow"></div>
+          </div>
+          <div class="radar-blip" style="top: 68%; left: 28%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot green"></div>
+          </div>
+          <div class="radar-blip" style="top: 18%; left: 72%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot red"></div>
+          </div>
+          <div class="radar-blip" style="top: 75%; left: 68%">
+            <div class="blip-pulse"></div>
+            <div class="blip-dot blue"></div>
+          </div>
+          <div class="radar-center">
+            <div class="center-pulse"></div>
+            <div class="center-dot"></div>
+          </div>
+          <div class="radar-glow"></div>
+          <div class="radar-grid"></div>
+        </div>
+        <div class="radar-status">
+          <div class="status-led red"></div>
+          <span>SCANNING ACTIVE</span>
+          <span class="separator">|</span>
+          <span>🛰️ LIVE</span>
+          <span class="separator">|</span>
+          <span>⚡ REAL-TIME</span>
+        </div>
+        <div class="radar-waves">
+          <div class="wave"></div>
+          <div class="wave"></div>
+          <div class="wave"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="form-section">
+      <div class="auth-header">
+        <h2><span class="auth-icon">🛡️</span> Welcome Back</h2>
+        <p class="auth-subtitle">Sign in to your command center</p>
+      </div>
+
+      <form method="POST" class="auth-form" id="login-form" novalidate>
+        {% csrf_token %}
+
+        <!-- Username -->
+        <div class="input-group" id="group-username">
+          <div class="input-icon"><i class="fas fa-user"></i></div>
+          <div class="input-field">
+            <input
+              type="text"
+              name="username"
+              id="username"
+              required
+              placeholder=" "
+              autocomplete="username"
+            />
+            <label for="username">Username</label>
+            <div class="input-line"></div>
+          </div>
+          <span class="field-status" id="status-username"></span>
+        </div>
+        <div class="field-feedback" id="feedback-username"></div>
+
+        <!-- Password -->
+        <div class="input-group" id="group-password">
+          <div class="input-icon"><i class="fas fa-lock"></i></div>
+          <div class="input-field">
+            <input
+              type="password"
+              name="password"
+              id="password"
+              required
+              placeholder=" "
+              autocomplete="current-password"
+            />
+            <label for="password">Password</label>
+            <div class="input-line"></div>
+            <span class="eye-toggle" onclick="toggleEye()" id="eye-icon"
+              >👁️‍🗨️</span
+            >
+          </div>
+          <span class="field-status" id="status-password"></span>
+        </div>
+        <div class="field-feedback" id="feedback-password"></div>
+
+        <!-- Server-side errors -->
+        {% if messages %} {% for message in messages %}
+        <div class="server-error">⚠️ {{ message }}</div>
+        {% endfor %} {% endif %}
+
+        <div class="auth-options">
+          <label class="checkbox-container">
+            <input type="checkbox" name="remember" />
+            <span class="checkmark"></span>
+            <span class="checkbox-text">Remember me</span>
+          </label>
+          <a href="{% url 'password_reset' %}" class="forgot-link"
+            >Forgot password?</a
+          >
+        </div>
+
+        <button type="submit" class="auth-btn" id="login-btn">
+          <span class="btn-text">Login</span>
+          <span class="btn-icon">→</span>
+        </button>
+
+        <div class="auth-divider"><span>New to SafeRoute?</span></div>
+        <a href="{% url 'register' %}?from=login" class="auth-secondary-btn">
+          Create Account
+        </a>
+      </form>
+
+    {% if from == 'register' %}
+    <a href="{% url 'register' %}?from=login" class="auth-back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back
+    </a>
+    {% else %}
+    <a href="{% url 'landing' %}" class="auth-back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Back to home
+    </a>
+    {% endif %}
+
+    </div>
+  </div>
+</div>
+<script src="https://kit.fontawesome.com/345c81a322.js" crossorigin="anonymous"></script>
+
+
+<script>
+  function toggleEye() {
+    const input = document.getElementById("password");
+    const eye = document.getElementById("eye-icon");
+    if (input.type === "password") {
+      input.type = "text";
+      eye.innerHTML = "👁️";
+      eye.style.opacity = "1";
+    } else {
+      input.type = "password";
+      eye.innerHTML = "👁️‍🗨️";
+      eye.style.opacity = "0.5";
+    }
+  }
+
+  // ── Username ──
+  const usernameInput = document.getElementById("username");
+  usernameInput.addEventListener("blur", function () {
+    const val = this.value.trim();
+    if (!val)
+      setInvalid(
+        "group-username",
+        "feedback-username",
+        "status-username",
+        "Username is required",
+      );
+    else setValid("group-username", "feedback-username", "status-username", "");
+  });
+  usernameInput.addEventListener("input", function () {
+    if (this.value.trim()) {
+      document.getElementById("group-username").classList.remove("invalid");
+      document.getElementById("group-username").classList.add("valid");
+      document.getElementById("feedback-username").textContent = "";
+      document.getElementById("status-username").textContent = "";
+    }
+  });
+
+  // ── Password ──
+  const passwordInput = document.getElementById("password");
+  passwordInput.addEventListener("blur", function () {
+    const val = this.value;
+    if (!val)
+      setInvalid(
+        "group-password",
+        "feedback-password",
+        "status-password",
+        "Password is required",
+      );
+    else if (val.length < 8)
+      setInvalid(
+        "group-password",
+        "feedback-password",
+        "status-password",
+        "Password must be at least 8 characters",
+      );
+    else setValid("group-password", "feedback-password", "status-password", "");
+  });
+  passwordInput.addEventListener("input", function () {
+    if (this.value.length >= 8) {
+      document.getElementById("group-password").classList.remove("invalid");
+      document.getElementById("group-password").classList.add("valid");
+      document.getElementById("feedback-password").textContent = "";
+      document.getElementById("status-password").textContent = "";
+    }
+  });
+
+  // ── Submit guard ──
+  document
+    .getElementById("login-form")
+    .addEventListener("submit", function (e) {
+      const u = document.getElementById("username").value.trim();
+      const p = document.getElementById("password").value;
+      if (!u) {
+        e.preventDefault();
+        setInvalid(
+          "group-username",
+          "feedback-username",
+          "status-username",
+          "Username is required",
+        );
+        return;
+      }
+      if (!p) {
+        e.preventDefault();
+        setInvalid(
+          "group-password",
+          "feedback-password",
+          "status-password",
+          "Password is required",
+        );
+        return;
+      }
+    });
+
+  // ── Helpers ──
+  function setValid(gId, fId, sId, msg) {
+    const g = document.getElementById(gId);
+    g.classList.remove("invalid");
+    g.classList.add("valid");
+    const f = document.getElementById(fId);
+    f.textContent = msg;
+    f.className = "field-feedback success";
+    document.getElementById(sId).textContent = "";
+  }
+  function setInvalid(gId, fId, sId, msg) {
+    const g = document.getElementById(gId);
+    g.classList.remove("valid");
+    g.classList.add("invalid");
+    const f = document.getElementById(fId);
+    f.textContent = msg;
+    f.className = "field-feedback error";
+    document.getElementById(sId).textContent = "❌";
+  }
+
+  // ── Focus line ──
+  document.querySelectorAll(".input-field input").forEach((input) => {
+    input.addEventListener("focus", function () {
+      this.parentElement.querySelector(".input-line").style.width = "100%";
+    });
+  });
+</script>
+
+{% endblock %}

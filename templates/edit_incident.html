@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block content %}
+
+{% load static %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="report-container">
+
+    <a href="{% url 'incident_detail' incident.id %}" class="back-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> Back</a>
+
+    <h2>Edit Incident</h2>
+    <p class="report-subtitle">Update the details below. Click the map to move the pin.</p>
+
+    <div id="report-map"></div>
+    <p class="coords-display" id="coords-display">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> Current location: {{ incident.latitude|floatformat:4 }}, {{ incident.longitude|floatformat:4 }}
+    </p>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Incident Title</label>
+                <input type="text"
+                       name="title"
+                       value="{{ form.title.value }}"
+                       required
+                       placeholder="e.g. Armed robbery at night"/>
+                {% if form.title.errors %}
+                <p class="error">{{ form.title.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>Incident Type</label>
+                <select name="type" required>
+                    <option value="">-- Select Type --</option>
+                    {% for value, label in form.fields.type.choices %}
+                    <option value="{{ value }}"
+                        {% if form.type.value == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.type.errors %}
+                <p class="error">{{ form.type.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label>Danger Level</label>
+                <select name="danger_level" required>
+                    {% for value, label in form.fields.danger_level.choices %}
+                    <option value="{{ value }}"
+                        {% if form.danger_level.value == value|stringformat:"s" %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Location Name</label>
+                <input type="text"
+                       name="location"
+                       value="{{ form.location.value }}"
+                       required
+                       placeholder="e.g. Ikeja Under Bridge, Lagos"/>
+                {% if form.location.errors %}
+                <p class="error">{{ form.location.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="form-group full-width">
+                <label>Description</label>
+                <textarea name="description" rows="4" required
+                          placeholder="Describe what happened...">{{ form.description.value }}</textarea>
+                {% if form.description.errors %}
+                <p class="error">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <input type="hidden" name="latitude"  id="latitude"  value="{{ incident.latitude }}"/>
+            <input type="hidden" name="longitude" id="longitude" value="{{ incident.longitude }}"/>
+
+        </div>
+
+        {% if form.non_field_errors %}
+        <p class="error">{{ form.non_field_errors.0 }}</p>
+        {% endif %}
+
+        <div class="edit-actions">
+            <button type="submit" class="btn-primary"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Changes</button>
+            <a href="{% url 'incident_detail' incident.id %}" class="btn-cancel">Cancel</a>
+        </div>
+    </form>
+
+    <!-- Danger zone -->
+    <div class="danger-zone">
+        <h3>Danger Zone</h3>
+        <p>Deleting this report is permanent and cannot be undone.</p>
+        <button class="btn-delete" onclick="confirmDelete()"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete This Report</button>
+
+        <form method="POST"
+              action="{% url 'delete_incident' incident.id %}"
+              id="delete-form"
+              style="display:none;">
+            {% csrf_token %}
+        </form>
+    </div>
+
+</div>
+
+<script>
+    const initLat = {{ incident.latitude }};
+    const initLng = {{ incident.longitude }};
+
+    const map = L.map('report-map').setView([initLat, initLng], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = L.marker([initLat, initLng]).addTo(map);
+
+    map.on('click', function(e) {
+        placeMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    function placeMarker(lat, lng) {
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map);
+        document.getElementById('latitude').value  = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+        document.getElementById('coords-display').innerHTML =
+            `Location updated: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        document.getElementById('coords-display').style.color = '#2ecc71';
+    }
+
+    function confirmDelete() {
+        const confirmed = confirm(
+            '⚠️ Are you sure you want to delete this report?\n\nThis action cannot be undone.'
+        );
+        if (confirmed) {
+            document.getElementById('delete-form').submit();
+        }
+    }
+</script>
+
+<style>
+    .edit-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        align-items: center;
+    }
+
+    .btn-cancel {
+        padding: 12px 24px;
+        border-radius: 8px;
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: var(--gray);
+        text-decoration: none;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        border-color: rgba(255,255,255,0.4);
+        color: var(--white);
+    }
+
+    .danger-zone {
+        margin-top: 48px;
+        padding: 24px;
+        border: 1px solid rgba(230, 57, 70, 0.3);
+        border-radius: 12px;
+        background: rgba(230, 57, 70, 0.05);
+    }
+
+    .danger-zone h3 {
+        color: #e63946;
+        margin-bottom: 8px;
+        font-size: 1rem;
+    }
+
+    .danger-zone p {
+        color: var(--gray);
+        font-size: 0.9rem;
+        margin-bottom: 16px;
+    }
+
+    .btn-delete {
+        background: transparent;
+        border: 1px solid #e63946;
+        color: #e63946;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-delete:hover {
+        background: #e63946;
+        color: white;
+    }
+</style>
+
+{% endblock %}
