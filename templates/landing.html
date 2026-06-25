@@ -14,6 +14,50 @@
       }
     })();
   </script>
+  <style>
+    /* ── Landing nav: mobile responsiveness fix ── */
+    /* Keep the nav on ONE line; never let it wrap/break apart. */
+    .landing-nav-links {
+      flex-wrap: nowrap;
+    }
+
+    /* Tablet & down: hide secondary links, keep essentials compact */
+    @media (max-width: 768px) {
+      .landing-nav {
+        padding: 0 16px;
+      }
+      .landing-nav-links {
+        gap: 12px;
+      }
+      /* Hide the in-page anchor links on mobile (no room, and they scroll
+         the same page — Login + Get Started are what matter here). */
+      .landing-nav-links a[href^="#"] {
+        display: none;
+      }
+      .landing-nav-links a.btn-report {
+        padding: 8px 16px;
+        font-size: 0.82rem;
+        white-space: nowrap;
+      }
+    }
+
+    /* Small phones: tighten further so nothing overflows */
+    @media (max-width: 420px) {
+      .landing-nav {
+        padding: 0 12px;
+      }
+      .landing-nav-links {
+        gap: 8px;
+      }
+      .nav-brand {
+        font-size: 1.05rem;
+      }
+      .landing-nav-links a.btn-report {
+        padding: 7px 13px;
+        font-size: 0.78rem;
+      }
+    }
+  </style>
   </head>
 
   <body class="landing-body">
@@ -54,7 +98,7 @@
     <!-- HERO -->
     <section class="hero">
       <div class="hero-content">
-        <div class="hero-eyebrow">🌍 Global Community Safety Platform</div>
+        <div class="hero-eyebrow"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Global Community Safety Platform</div>
         <h1>
           Navigate<br /><span class="highlight">Safely</span><br />Everywhere
         </h1>
@@ -63,9 +107,7 @@
           danger before you walk into it.
         </p>
         <div class="hero-buttons">
-          <a href="{% url 'register' %}" class="btn-hero-primary"
-            >Launch App →</a
-          >
+          <a href="{% url 'register' %}" class="btn-hero-primary">Launch App <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
           <a href="#how" class="btn-hero-secondary">See How It Works</a>
         </div>
         <div class="hero-stats">
@@ -190,16 +232,16 @@
 
     <!-- FEATURES -->
     <section class="features" id="features">
-      <div class="text-center">
+      <div class="text-center reveal">
         <div class="section-label">Core Features</div>
         <h2>Everything You Need<br />To Stay Safe</h2>
         <p class="features-subtitle">
           A unified safety intelligence platform built for communities worldwide
         </p>
       </div>
-      <div class="features-grid">
+      <div class="features-grid reveal-stagger">
         <div class="feature-card">
-          <div class="feature-icon-wrap">🗺️</div>
+          <div class="feature-icon-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></div>
           <h3>Live Safety Map</h3>
           <p>
             Interactive global map with color-coded incident markers and
@@ -208,7 +250,7 @@
           </p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon-wrap">🚨</div>
+          <div class="feature-icon-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
           <h3>Instant Reporting</h3>
           <p>
             Click any point on the map to report. Capture exact coordinates,
@@ -216,7 +258,7 @@
           </p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon-wrap">🔥</div>
+          <div class="feature-icon-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/></svg></div>
           <h3>Danger Heatmap</h3>
           <p>
             Visual concentration zones updated in real-time as reports come in.
@@ -224,7 +266,7 @@
           </p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon-wrap">💬</div>
+          <div class="feature-icon-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
           <h3>Community Intel</h3>
           <p>
             Comment and share experiences on every report. Community
@@ -232,7 +274,7 @@
           </p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon-wrap">🆘</div>
+          <div class="feature-icon-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.68A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg></div>
           <h3>SOS Emergency</h3>
           <p>
             One-tap emergency button captures your live GPS coordinates and
@@ -240,7 +282,7 @@
           </p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon-wrap">📰</div>
+          <div class="feature-icon-wrap"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg></div>
           <h3>Regional News Feed</h3>
           <p>
             Live safety news sidebar filtered by your searched location. Connect
@@ -252,9 +294,9 @@
 
     <!-- HOW IT WORKS -->
     <section class="how-it-works" id="how">
-      <div class="section-label center-label">How It Works</div>
-      <h2>From Registration<br />To Safety In Minutes</h2>
-      <div class="steps">
+      <div class="section-label center-label reveal">How It Works</div>
+      <h2 class="reveal">From Registration<br />To Safety In Minutes</h2>
+      <div class="steps reveal-stagger">
         <div class="step">
           <div class="step-number">01</div>
           <h3>Create Account</h3>
@@ -292,18 +334,16 @@
 
     <!-- CTA -->
     <section class="cta">
-      <div class="section-label center-label">Get Started</div>
-      <h2>Ready To Navigate<br />With Confidence?</h2>
-      <p>Join a global community making streets safer one report at a time.</p>
-      <a href="{% url 'register' %}" class="btn-hero-primary"
-        >Launch SafeRoute →</a
-      >
+      <div class="section-label center-label reveal">Get Started</div>
+      <h2 class="reveal">Ready To Navigate<br />With Confidence?</h2>
+      <p class="reveal">Join a global community making streets safer one report at a time.</p>
+      <a href="{% url 'register' %}" class="btn-hero-primary reveal">Launch SafeRoute <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
     </section>
 
     <!-- FOOTER -->
-    <footer class="footer">
+    <footer class="footer reveal">
       <p style="margin-bottom: 8px">
-        🛡️ <strong style="color: var(--off-white)">SafeRoute</strong>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:4px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <strong style="color: var(--off-white)">SafeRoute</strong>
         Community-Powered · Real-Time · Global · Free
       </p>
       <p>
@@ -311,6 +351,51 @@
       </p>
     </footer>
   </body>
+
+  <style>
+    /* ── Scroll Reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-stagger > * {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .reveal-stagger.visible > *:nth-child(1) { transition-delay: 0.05s; opacity: 1; transform: translateY(0); }
+    .reveal-stagger.visible > *:nth-child(2) { transition-delay: 0.15s; opacity: 1; transform: translateY(0); }
+    .reveal-stagger.visible > *:nth-child(3) { transition-delay: 0.25s; opacity: 1; transform: translateY(0); }
+    .reveal-stagger.visible > *:nth-child(4) { transition-delay: 0.35s; opacity: 1; transform: translateY(0); }
+    .reveal-stagger.visible > *:nth-child(5) { transition-delay: 0.45s; opacity: 1; transform: translateY(0); }
+    .reveal-stagger.visible > *:nth-child(6) { transition-delay: 0.55s; opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal, .reveal-stagger > * { transition: none; opacity: 1; transform: none; }
+    }
+  </style>
+
+  <script>
+    (function() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => {
+        observer.observe(el);
+      });
+    })();
+  </script>
 
   <script>
     // ============================================================

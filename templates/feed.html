@@ -1,21 +1,90 @@
 {% extends 'base.html' %}
 {% load static %}
+
+{# Feed uses the TikTok-style left rail on desktop. On mobile the rail hides,
+   so we show the normal top nav there instead. This wrapper hides the top nav
+   on desktop (rail takes over) but shows it on mobile for navigation. #}
+{% block topnav %}
+<div class="feed-mobile-topnav">
+  {{ block.super }}
+</div>
+{% endblock %}
+
 {% block content %}
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<div class="feed-wrapper" id="feed-wrapper">
+<div class="feed-layout">
 
-  {% if feed_items %}
-    {% for item in feed_items %}
+  <!-- ══ LEFT NAV RAIL (feed page only) ══ -->
+  <aside class="feed-nav-rail">
+    <!-- Brand / logo -->
+    <a href="{% url 'feed' %}" class="frail-brand">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e63946" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span class="frail-brand-text"><strong>SAFE</strong>ROUTE</span>
+    </a>
+
+    <a href="{% url 'feed' %}" class="frail-item active">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span>Feed</span>
+    </a>
+    <a href="{% url 'map' %}" class="frail-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <span>Map</span>
+    </a>
+    <a href="{% url 'incidents' %}" class="frail-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span>Incidents</span>
+    </a>
+    <a href="{% url 'area_search_page' %}" class="frail-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
+      <span>Areas</span>
+    </a>
+    <a href="{% url 'profile' %}" class="frail-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Profile</span>
+    </a>
+
+    <!-- Report — styled to stand out (outlined alert pill) -->
+    <a href="{% url 'report' %}" class="frail-report">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Report Incident
+    </a>
+
+    <!-- Theme toggle (pushed to bottom) -->
+    <button class="frail-theme-toggle" onclick="toggleTheme()">
+      <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      <span class="frail-theme-label">Toggle theme</span>
+    </button>
+  </aside>
+
+  <!-- ══ CENTERED MEDIA COLUMN ══ -->
+  <div class="feed-wrapper" id="feed-wrapper">
+
+  {% if feed_stream %}
+    {% for item in feed_stream %}
+    {% if item.kind == 'incident' %}
     <div class="feed-card" data-id="{{ item.incident.id }}"
          data-lat="{{ item.incident.latitude }}"
          data-lng="{{ item.incident.longitude }}"
-         data-has-photo="{% if item.photo %}true{% else %}false{% endif %}">
+         data-has-photo="{% if item.photo or item.video %}true{% else %}false{% endif %}">
+         <!-- has-photo=true means a media background exists (photo OR video); map only renders when false -->
 
-      <!-- ── BACKGROUND: Photo or Map ── -->
-      {% if item.photo %}
+      <!-- ── BACKGROUND: Video, Photo, or Map ── -->
+      {% if item.video %}
+        <div class="feed-bg feed-bg-video">
+          <video class="feed-video"
+                 src="{{ item.video.file.url }}"
+                 muted loop playsinline preload="metadata"
+                 data-incident="{{ item.incident.id }}"></video>
+          <button class="feed-sound-toggle" onclick="toggleFeedSound(this, event)" aria-label="Toggle sound">
+            <svg class="icon-muted" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            <svg class="icon-sound" style="display:none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </button>
+        </div>
+      {% elif item.photo %}
         <div class="feed-bg feed-bg-photo"
              style="background-image: url('{{ item.photo.file.url }}')">
         </div>
@@ -145,6 +214,30 @@
           <span class="feed-action-count">Detail</span>
         </a>
 
+        <!-- Flag / report abuse -->
+        <div class="feed-action-btn" onclick="feedFlag({{ item.incident.id }}, this)">
+          <div class="feed-action-icon feed-flag-icon {% if item.has_flagged %}flagged{% endif %}"
+               id="flag-icon-{{ item.incident.id }}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+              <line x1="4" y1="22" x2="4" y2="15"/>
+            </svg>
+          </div>
+          <span class="feed-action-count">Report</span>
+        </div>
+
+      </div>
+
+      <!-- Flag reason mini-sheet (per card) -->
+      <div class="feed-flag-sheet" id="flag-sheet-{{ item.incident.id }}">
+        <div class="feed-flag-sheet-inner">
+          <p class="feed-flag-sheet-title">Report this incident</p>
+          <button onclick="submitFeedFlag({{ item.incident.id }}, 'fake')">Fake or spam</button>
+          <button onclick="submitFeedFlag({{ item.incident.id }}, 'inappropriate')">Inappropriate or harmful</button>
+          <button class="feed-flag-sheet-cancel" onclick="closeFeedFlag({{ item.incident.id }})">Cancel</button>
+        </div>
       </div>
 
       <!-- ── BOTTOM INFO ── -->
@@ -272,12 +365,28 @@
            onclick="closeComments({{ item.incident.id }})"></div>
 
     </div>
+
+    {% elif item.kind == 'news' %}
+    {# ── LIVE NEWS card (mixed into the feed) ── #}
+    <div class="feed-card feed-news-card" data-news-index="{{ item.news_index }}">
+      <div class="feed-news-badge">
+        <span class="live-dot"></span> LIVE NEWS
+      </div>
+      <div class="feed-news-player" id="news-player-{{ item.news_index }}">
+        <!-- player injected by JS when this card scrolls into view -->
+      </div>
+      <div class="feed-news-info">
+        <span class="feed-news-channel" id="news-channel-{{ item.news_index }}"></span>
+        <p class="feed-news-note">Live broadcast — not a SafeRoute community report</p>
+      </div>
+    </div>
+    {% endif %}
     {% endfor %}
 
   {% else %}
-    <div class="feed-empty">
+    <div class="feed-empty feed-empty-compact">
       <div class="feed-empty-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
              stroke-linejoin="round">
           <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
@@ -292,6 +401,9 @@
   {% endif %}
 
 </div>
+<!-- end .feed-wrapper -->
+</div>
+<!-- end .feed-layout -->
 
 <!-- Login prompt toast -->
 <div class="feed-login-toast" id="feed-login-toast">
@@ -304,29 +416,215 @@
 </div>
 
 <style>
-  /* ── FEED WRAPPER ── */
+  /* ══ 3-ZONE FEED LAYOUT (desktop) ══ */
+  .feed-layout {
+    display: flex;
+    /* Top nav is hidden on desktop feed, so use full viewport minus the
+       container's top+bottom padding (28px each = 56px). */
+    height: calc(100vh - 56px);
+    margin: -28px -36px;
+    /* Transparent so the fixed particle canvas (behind everything) shows
+       through in the gutters around the centered media column. */
+    background: transparent;
+    position: relative;
+  }
+
+  /* Feed top nav: hidden on desktop (left rail takes over),
+     shown on mobile (where the rail is hidden) so users can navigate. */
+  .feed-mobile-topnav { display: none; }
+
+  /* On the feed, make the hamburger menu a COMPACT left-aligned panel
+     instead of a full-width screen takeover. */
+  .feed-mobile-topnav .mobile-menu {
+    left: 0;
+    right: auto;                /* don't stretch across — was left:0 + right:0 */
+    width: 240px;              /* compact panel */
+    max-width: 78vw;
+    border-right: 1px solid var(--border-2);
+    border-bottom: 1px solid var(--border-2);
+    border-radius: 0 0 14px 0; /* soften the loose corner */
+    box-shadow: 8px 8px 28px rgba(0,0,0,0.4);
+  }
+  .feed-mobile-topnav .mobile-menu a,
+  .feed-mobile-topnav .mobile-menu .mobile-theme-toggle,
+  .feed-mobile-topnav .mobile-menu .mobile-logout-btn {
+    justify-content: flex-start;  /* left-align text, not centered */
+    text-align: left;
+  }
+
+  /* ── LEFT NAV RAIL ── */
+  .feed-nav-rail {
+    width: 220px;
+    flex-shrink: 0;
+    padding: 24px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-right: 1px solid var(--border, rgba(255,255,255,0.06));
+    overflow-y: auto;
+  }
+
+  /* Brand / logo at top of rail */
+  .frail-brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px 18px;
+    text-decoration: none;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border, rgba(255,255,255,0.06));
+  }
+  .frail-brand-text {
+    font-family: var(--font-display, inherit);
+    font-size: 1.15rem; letter-spacing: 1px; color: var(--white);
+  }
+  .frail-brand-text strong { color: #e63946; }
+
+  /* Theme toggle at bottom of rail */
+  .frail-theme-toggle {
+    margin-top: auto;   /* push to the bottom of the rail */
+    display: flex; align-items: center; gap: 14px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    background: none; border: none; cursor: pointer;
+    color: var(--off-white, rgba(255,255,255,0.85));
+    font-family: var(--font-body, inherit);
+    font-size: 1rem; font-weight: 600;
+    transition: all 0.18s ease;
+    position: relative;
+  }
+  .frail-theme-toggle:hover { background: var(--panel-2, rgba(255,255,255,0.06)); color: var(--white); }
+  .frail-theme-toggle .icon-sun,
+  .frail-theme-toggle .icon-moon { flex-shrink: 0; transition: opacity 0.2s, transform 0.3s; position: absolute; }
+  .frail-theme-toggle .icon-sun  { opacity: 0; transform: rotate(90deg) scale(0.5); }
+  .frail-theme-toggle .icon-moon { opacity: 1; transform: rotate(0) scale(1); }
+  html.light .frail-theme-toggle .icon-sun  { opacity: 1; transform: rotate(0) scale(1); }
+  html.light .frail-theme-toggle .icon-moon { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+  .frail-theme-label { margin-left: 34px; }
+  .frail-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    color: var(--off-white, rgba(255,255,255,0.85));
+    text-decoration: none;
+    font-size: 1rem; font-weight: 600;
+    transition: all 0.18s ease;
+  }
+  .frail-item svg { flex-shrink: 0; }
+  .frail-item:hover { background: var(--panel-2, rgba(255,255,255,0.06)); color: var(--white); }
+  .frail-item.active { color: #e63946; }
+  .frail-item.active svg { color: #e63946; }
+
+  .frail-report {
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(230,57,70,0.12);
+    border: 1.5px solid #e63946;
+    color: #e63946;
+    text-decoration: none;
+    font-size: 0.95rem; font-weight: 700;
+    transition: all 0.2s ease;
+  }
+  .frail-report:hover {
+    background: #e63946;
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(230,57,70,0.35);
+  }
+
+  /* ── FEED WRAPPER (centered media column) ── */
   .feed-wrapper {
-    height: calc(100vh - 64px);
+    flex: 1;
+    height: 100%;
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     position: relative;
-    /* Negative margin to remove container padding */
-    margin: -28px -36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Top + bottom breathing room so cards sit centered, not flush to edges */
+    padding: 20px 0;
+    box-sizing: border-box;
   }
   .feed-wrapper::-webkit-scrollbar { display: none; }
 
-  /* ── FEED CARD ── */
-  .feed-card {
-    position: relative;
-    height: calc(100vh - 64px);
-    width: 100%;
-    scroll-snap-align: start;
-    overflow: hidden;
-    background: #060810;
+  /* ── LIVE NEWS card ── */
+  .feed-news-card {
+    background: #000;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .feed-news-badge {
+    position: absolute;
+    top: 20px; left: 16px;
+    z-index: 10;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(230,57,70,0.95);
+    color: #fff;
+    font-size: 0.72rem; font-weight: 800; letter-spacing: 0.5px;
+    padding: 5px 11px; border-radius: 8px;
+  }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #fff; animation: livepulse 1.4s ease-in-out infinite;
+  }
+  @keyframes livepulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Player fills the ENTIRE card (like incident media) — no centered 16:9 box,
+     no dead black gaps on tall phone screens. */
+  .feed-news-player {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1;
+  }
+  .feed-news-player iframe { width: 100%; height: 100%; border: 0; }
+  .feed-news-player > div { width: 100%; height: 100%; }
+  .feed-news-player .news-loading {
+    color: var(--gray-2, #9aa); font-size: 0.85rem;
+  }
+
+  .feed-news-info {
+    position: absolute;
+    bottom: 24px; left: 16px; right: 16px;
+    z-index: 10;
+    padding-top: 40px;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+    margin: 0 -16px -24px;
+    padding: 40px 16px 24px;
+  }
+  .feed-news-channel {
+    color: #fff; font-weight: 700; font-size: 1rem;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+  }
+  .feed-news-note {
+    color: rgba(255,255,255,0.75); font-size: 0.76rem; margin: 4px 0 0;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  }
+
+
+  .feed-card {
+    position: relative;
+    height: calc(100% - 48px);   /* leave 24px top + 24px bottom breathing room */
+    width: 100%;
+    max-width: 480px;          /* phone-like column on desktop */
+    margin: 24px 0;            /* equal space above and below each card */
+    scroll-snap-align: center; /* center the card in view when snapping */
+    overflow: hidden;
+    background: var(--panel, #060810);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    border-radius: 18px;       /* rounded so it reads as a floating phone card */
   }
 
   /* ── BACKGROUND ── */
@@ -347,6 +645,30 @@
     z-index: 0;
     filter: brightness(0.6) saturate(0.8);
   }
+
+  .feed-bg-video {
+    overflow: hidden;
+  }
+  .feed-video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: brightness(0.78);
+  }
+  .feed-sound-toggle {
+    position: absolute;
+    bottom: 90px; left: 16px;
+    z-index: 5;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .feed-sound-toggle:hover { background: rgba(0,0,0,0.75); transform: scale(1.06); }
 
   /* Gradient overlays */
   .feed-overlay {
@@ -416,13 +738,13 @@
   /* ── RIGHT ACTION BUTTONS ── */
   .feed-actions {
     position: absolute;
-    right: 14px;
-    bottom: 220px;
+    right: 12px;
+    bottom: 40px;
     z-index: 10;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap:5px;
   }
 
   .feed-avatar-wrap {
@@ -475,6 +797,34 @@
   }
 
   .feed-action-icon.saved  { color: #f59e0b; }
+
+  .feed-flag-icon.flagged {
+    color: #e63946;
+    border-color: rgba(230,57,70,0.6);
+    background: rgba(230,57,70,0.18);
+  }
+
+  /* Feed flag reason sheet (slides up per card) */
+  .feed-flag-sheet {
+    display: none;
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    padding: 16px;
+  }
+  .feed-flag-sheet.open { display: flex; justify-content: center; align-items: flex-end; }
+  .feed-flag-sheet-inner {
+    background: var(--panel, #14161c); border: 1px solid var(--border-2, rgba(255,255,255,0.12));
+    border-radius: 14px; padding: 16px; width: 100%; max-width: 360px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .feed-flag-sheet-title { color: var(--white, #fff); font-weight: 600; font-size: 0.9rem; margin: 0 0 4px; text-align: center; }
+  .feed-flag-sheet-inner button {
+    padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.86rem;
+    background: var(--panel-2, rgba(255,255,255,0.05)); color: var(--white, #fff);
+    border: 1px solid var(--border-2, rgba(255,255,255,0.12)); transition: all 0.15s ease;
+  }
+  .feed-flag-sheet-inner button:hover { border-color: #e63946; background: rgba(230,57,70,0.08); }
+  .feed-flag-sheet-cancel { color: var(--gray-2, #9aa) !important; }
 
   /* Trust action states */
   .feed-action-icon.active-confirm {
@@ -616,10 +966,10 @@
     position: absolute;
     bottom: 0; left: 0; right: 0;
     z-index: 20;
-    background: rgba(10,12,22,0.97);
+    background: var(--panel, rgba(10,12,22,0.97));
     backdrop-filter: blur(20px);
     border-radius: 20px 20px 0 0;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    border-top: 1px solid var(--border-2, rgba(255,255,255,0.08));
     transform: translateY(100%);
     transition: transform 0.35s var(--ease);
     max-height: 70vh;
@@ -631,7 +981,7 @@
 
   .drawer-handle {
     width: 36px; height: 4px;
-    background: rgba(255,255,255,0.2);
+    background: var(--border-2, rgba(255,255,255,0.2));
     border-radius: 2px;
     margin: 10px auto 0;
     flex-shrink: 0;
@@ -642,14 +992,14 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 18px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid var(--border, rgba(255,255,255,0.06));
     flex-shrink: 0;
   }
 
   .drawer-header h4 {
     font-size: 0.9rem;
     font-weight: 600;
-    color: white;
+    color: var(--white, white);
     display: flex; align-items: center; gap: 8px;
   }
 
@@ -968,18 +1318,53 @@
     padding: 0 4px;
   }
 
-  /* ── RESPONSIVE ── */
+  /* ═══════════════════ RESPONSIVE LADDER ═══════════════════ */
+
+  /* ── LARGE DESKTOP (≥1400px): wider rail + roomier column ── */
+  @media (min-width: 1400px) {
+    .feed-nav-rail { width: 250px; }
+    .feed-card { max-width: 520px; }
+  }
+
+  /* ── TABLET / iPAD (≤900px): rail → top nav, full-width cards ── */
+  @media (max-width: 900px) {
+    /* Hide the left rail; show the normal top nav so users can navigate */
+    .feed-nav-rail { display: none; }
+    .feed-mobile-topnav { display: block; }
+
+    /* Fill the screen below the top nav with NO gaps. Cancel the container's
+       padding on all sides (top pulls under nav, bottom removes the gap).
+       Use 100dvh so mobile browser chrome is handled correctly. */
+    .feed-layout {
+      margin: -28px -36px;            /* cancel container padding all sides */
+      height: calc(100dvh - 64px);    /* 64px = top nav height */
+      min-height: calc(100dvh - 64px);
+    }
+    /* No outer padding on the wrapper here — cards go edge-to-edge */
+    .feed-wrapper { padding: 0; }
+    .feed-card {
+      max-width: 100%;                /* full-width media = true TikTok */
+      height: 100%;                   /* fills one screenful, no gap */
+      min-height: 100%;
+      margin: 0;
+      border-radius: 0;
+    }
+  }
+
+  /* ── MOBILE (≤768px): nudge action rail + info for thumbs ── */
   @media (max-width: 768px) {
-    .feed-wrapper { margin: -28px -20px; }
-    .feed-actions { right: 10px; bottom: 180px; }
-    .feed-info { left: 12px; right: 72px; bottom: 24px; }
+    .feed-actions { right: 10px; bottom: 110px; }
+    .feed-info { left: 12px; right: 72px; bottom: 90px; }
     .feed-title { font-size: 1rem; }
   }
 
+  /* ── SMALL PHONES (≤480px): tighter spacing + smaller buttons ── */
   @media (max-width: 480px) {
-    .feed-wrapper { margin: -28px -12px; }
     .feed-action-icon { width: 42px; height: 42px; }
-    .feed-actions { gap: 16px; }
+    .feed-actions { gap: 14px; bottom: 100px; }
+    .feed-info { right: 64px; }
+    .feed-title { font-size: 0.95rem; }
+    .feed-news-badge { top: 14px; left: 12px; font-size: 0.66rem; }
   }
 </style>
 
@@ -1043,6 +1428,157 @@
   document.querySelectorAll('.feed-card[data-has-photo="false"]').forEach(card => {
     observer.observe(card);
   });
+
+  // ── VIDEO AUTOPLAY (TikTok-style: play in view, pause out, muted+loop) ──
+  const videoObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const video = entry.target;
+      if (entry.isIntersecting) {
+        video.play().catch(() => {}); // ignore autoplay-block errors
+      } else {
+        video.pause();
+        // Re-mute when scrolled away so the next view starts silent
+        video.muted = true;
+        syncSoundIcon(video);
+      }
+    });
+  }, { threshold: 0.6 });
+
+  document.querySelectorAll('.feed-video').forEach(v => videoObserver.observe(v));
+
+  // ── LIVE NEWS: rotate channels, lazy-load embeds on scroll ──
+  // Uses the YouTube IFrame Player API for real playback control — calling
+  // mute()+playVideo() programmatically is the best shot at autoplay (a plain
+  // iframe often can't). NOTE: browsers may STILL block autoplay until the
+  // user interacts with the page; if so, the play button shows and a tap
+  // starts it. Video IDs can also go stale on stream restart.
+  const NEWS_CHANNELS = [
+    // ── International (confirmed working IDs) ──
+    { name: 'Al Jazeera English', videoId: 'gCNeDWCI0vo' },
+    { name: 'DW News',            videoId: 'LuKwFajn37U' },
+    { name: 'France 24 English',  videoId: 'HvZt-nh9sGg' },
+    { name: 'Sky News',           videoId: '6pN6SuWuPPI' },
+    // ── Add more here: grab the live video ID from the channel's YouTube
+    //    live page (the part after watch?v=) and paste it below. Remove any
+    //    that stop working. Mix Nigerian + international freely.
+    { name: 'Channels TV',     videoId: 'd4zDorDl5UE' },
+    { name: 'TVC News',        videoId: 'b-Yzp0l8cAM' },
+    { name: 'Arise News',      videoId: 'Fy_03Aorpq8' },
+    { name: 'Africanews',      videoId: 'NQjabLGdP5g' },
+  ];
+
+  // Load the YouTube IFrame API script once
+  let ytApiReady = false;
+  const ytPlayers = {};       // newsIndex -> YT.Player
+  const ytPendingPlay = {};   // newsIndex -> bool (wants to play once ready)
+
+  (function loadYouTubeAPI() {
+    if (window.YT && window.YT.Player) { ytApiReady = true; return; }
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  })();
+
+  window.onYouTubeIframeAPIReady = function () {
+    ytApiReady = true;
+    // Start any players that scrolled into view before the API finished loading
+    Object.keys(ytPendingPlay).forEach(idx => {
+      if (ytPendingPlay[idx]) buildPlayer(parseInt(idx, 10));
+    });
+  };
+
+  function buildPlayer(idx) {
+    const channel = NEWS_CHANNELS[idx % NEWS_CHANNELS.length];
+    const mount = document.getElementById(`news-player-${idx}`);
+    if (!mount || ytPlayers[idx]) return;
+
+    // Give the API a container div to replace
+    mount.innerHTML = `<div id="yt-mount-${idx}"></div>`;
+    ytPlayers[idx] = new YT.Player(`yt-mount-${idx}`, {
+      videoId: channel.videoId,
+      host: 'https://www.youtube-nocookie.com',
+      playerVars: {
+        autoplay: 1, mute: 1, playsinline: 1, rel: 0,
+        origin: window.location.origin,
+      },
+      events: {
+        onReady: (e) => {
+          // Programmatic mute + play — best chance at autoplay
+          try { e.target.mute(); e.target.playVideo(); } catch (err) {}
+        },
+      },
+    });
+  }
+
+  function loadNewsEmbed(card) {
+    const idx = parseInt(card.dataset.newsIndex, 10);
+    const channel = NEWS_CHANNELS[idx % NEWS_CHANNELS.length];
+    const label = card.querySelector('.feed-news-channel');
+    if (label) label.textContent = channel.name;
+
+    if (ytPlayers[idx]) {
+      // Already built — just resume
+      try { ytPlayers[idx].mute(); ytPlayers[idx].playVideo(); } catch (e) {}
+      return;
+    }
+    if (ytApiReady) {
+      buildPlayer(idx);
+    } else {
+      ytPendingPlay[idx] = true;   // build once API loads
+    }
+  }
+
+  function unloadNewsEmbed(card) {
+    // Pause the stream when scrolled away (free up bandwidth) — but keep the
+    // player built so scrolling back resumes instantly.
+    const idx = parseInt(card.dataset.newsIndex, 10);
+    if (ytPlayers[idx]) {
+      try { ytPlayers[idx].pauseVideo(); } catch (e) {}
+    }
+    ytPendingPlay[idx] = false;
+  }
+
+  const newsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        loadNewsEmbed(entry.target);
+      } else {
+        unloadNewsEmbed(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('.feed-news-card').forEach(card => {
+    // Set the channel label immediately (even before load)
+    const idx = parseInt(card.dataset.newsIndex, 10);
+    const channel = NEWS_CHANNELS[idx % NEWS_CHANNELS.length];
+    const label = card.querySelector('.feed-news-channel');
+    if (label) label.textContent = channel.name;
+    const player = card.querySelector('.feed-news-player');
+    if (player) player.innerHTML = '<span class="news-loading">Loading live stream…</span>';
+    newsObserver.observe(card);
+  });
+
+  function syncSoundIcon(video) {
+    const wrap = video.closest('.feed-bg-video');
+    if (!wrap) return;
+    const btn = wrap.querySelector('.feed-sound-toggle');
+    if (!btn) return;
+    btn.querySelector('.icon-muted').style.display = video.muted ? '' : 'none';
+    btn.querySelector('.icon-sound').style.display = video.muted ? 'none' : '';
+  }
+
+  window.toggleFeedSound = function(btn, event) {
+    event.stopPropagation();
+    const video = btn.closest('.feed-bg-video').querySelector('.feed-video');
+    // Mute all OTHER videos first (only one plays sound at a time)
+    document.querySelectorAll('.feed-video').forEach(v => {
+      if (v !== video) { v.muted = true; syncSoundIcon(v); }
+    });
+    video.muted = !video.muted;
+    if (!video.muted) video.play().catch(() => {});
+    syncSoundIcon(video);
+  };
 
   // ── CONFIRM / DISPUTE ──
   function feedTrust(action, id) {
@@ -1129,6 +1665,50 @@
         showToast('Link copied to clipboard!');
       });
     }
+  }
+
+  // ── FLAG / REPORT ABUSE ──
+  function feedFlag(id, btn) {
+    const icon = document.getElementById(`flag-icon-${id}`);
+    // If already flagged, withdraw directly
+    if (icon && icon.classList.contains('flagged')) {
+      submitFeedFlag(id, 'fake', true);
+      return;
+    }
+    // Otherwise open the reason sheet
+    document.getElementById(`flag-sheet-${id}`).classList.add('open');
+  }
+
+  function closeFeedFlag(id) {
+    document.getElementById(`flag-sheet-${id}`).classList.remove('open');
+  }
+
+  function submitFeedFlag(id, reason, withdraw) {
+    fetch(`/incidents/${id}/flag/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'reason=' + encodeURIComponent(reason),
+    })
+    .then(r => {
+      if (r.status === 401 || r.status === 403) { showLoginToast(); return null; }
+      return r.json();
+    })
+    .then(data => {
+      if (!data) return;
+      closeFeedFlag(id);
+      const icon = document.getElementById(`flag-icon-${id}`);
+      if (data.flagged) {
+        icon.classList.add('flagged');
+        showToast(data.message || 'Sent for review.');
+      } else {
+        icon.classList.remove('flagged');
+        showToast(data.message || 'Report withdrawn.');
+      }
+    })
+    .catch(() => {});
   }
 
   // ── COMMENTS ──

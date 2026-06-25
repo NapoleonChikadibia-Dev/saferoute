@@ -7,6 +7,90 @@ from django.dispatch import receiver
 
 
 # ---------------------------------------------------------------------------
+# AREA  — hierarchical place model (Country → State → City → Local Area)
+# Self-referencing: every Area points to its parent, except countries.
+# (Restored to match migration 0008 — table already exists with 227 rows.)
+# ---------------------------------------------------------------------------
+
+class Area(models.Model):
+    LEVEL_COUNTRY = 1
+    LEVEL_STATE   = 2
+    LEVEL_CITY    = 3
+    LEVEL_LOCAL   = 4
+    LEVEL_CHOICES = [
+        (LEVEL_COUNTRY, 'Country'),
+        (LEVEL_STATE,   'State'),
+        (LEVEL_CITY,    'City'),
+        (LEVEL_LOCAL,   'Local Area'),
+    ]
+
+    name        = models.CharField(max_length=120, db_index=True)
+    level       = models.IntegerField(choices=LEVEL_CHOICES, db_index=True)
+    parent      = models.ForeignKey(
+                      'self',
+                      on_delete=models.CASCADE,
+                      null=True, blank=True,
+                      related_name='children'
+                  )
+    slug        = models.SlugField(max_length=160)
+
+    latitude    = models.FloatField(null=True, blank=True)
+    longitude   = models.FloatField(null=True, blank=True)
+
+    created_by  = models.ForeignKey(
+                      User, on_delete=models.SET_NULL,
+                      null=True, blank=True, related_name='created_areas'
+                  )
+    is_verified = models.BooleanField(default=False, db_index=True)
+    # Auto-created (from a dropped pin via geocoding) areas are usable immediately
+    # but flagged so an admin can audit what geocoding produced.
+    needs_review = models.BooleanField(default=False, db_index=True,
+                                       help_text='Auto-created from a pin; awaiting admin audit.')
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering        = ['level', 'name']
+        unique_together = (('name', 'parent'),)
+        indexes = [
+            models.Index(fields=['level', 'name'],   name='incidents_a_level_c3ef6e_idx'),
+            models.Index(fields=['parent', 'level'], name='incidents_a_parent__36434b_idx'),
+            models.Index(fields=['slug'],            name='incidents_a_slug_4bddf7_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_level_display()})"
+
+    def ancestors(self):
+        """Return list of ancestors from country down to this area's parent."""
+        chain, node = [], self.parent
+        while node is not None:
+            chain.append(node)
+            node = node.parent
+        return list(reversed(chain))
+
+    def full_path(self):
+        """Human-readable breadcrumb: 'Nigeria → Lagos → Ikeja → Allen Avenue'."""
+        return ' → '.join([a.name for a in self.ancestors()] + [self.name])
+
+    @property
+    def country(self):
+        node = self
+        while node and node.level > self.LEVEL_COUNTRY:
+            node = node.parent
+        return node
+
+    def incident_count(self):
+        """Total incidents in this area AND all its descendants."""
+        ids = [self.id]
+        frontier = [self.id]
+        while frontier:
+            kids = list(Area.objects.filter(parent_id__in=frontier).values_list('id', flat=True))
+            ids.extend(kids)
+            frontier = kids
+        return Incident.objects.filter(area_id__in=ids).count()
+
+
+# ---------------------------------------------------------------------------
 # USER PROFILE
 # ---------------------------------------------------------------------------
 
@@ -70,6 +154,13 @@ class Incident(models.Model):
     latitude     = models.FloatField()
     longitude    = models.FloatField()
     location     = models.CharField(max_length=200)
+    area         = models.ForeignKey(
+                       'Area',
+                       on_delete=models.SET_NULL,
+                       null=True, blank=True,
+                       related_name='incidents',
+                       help_text='Structured area this incident belongs to'
+                   )
     danger_level = models.IntegerField(choices=DANGER_LEVELS, default=1, db_index=True)
     reported_by  = models.ForeignKey(User, on_delete=models.CASCADE,
                                      related_name='incidents')
@@ -82,6 +173,17 @@ class Incident(models.Model):
     #   False → force un-verified regardless of counts
     verified_override = models.BooleanField(null=True, blank=True, default=None,
                                             help_text='Admin override. Null = automatic.')
+
+    # MODERATION (soft-hide — reversible, auditable)
+    # is_hidden=True removes the incident from all public views (feed, map,
+    # areas, detail) but keeps the record in the database. Reversible.
+    is_hidden       = models.BooleanField(default=False,
+                                          help_text='Hidden by moderation. Removed from public views but kept.')
+    hidden_at       = models.DateTimeField(null=True, blank=True)
+    hidden_by       = models.ForeignKey(User, null=True, blank=True,
+                                        on_delete=models.SET_NULL,
+                                        related_name='hidden_incidents')
+    hidden_reason   = models.CharField(max_length=200, blank=True, default='')
 
     # TRUST SIGNALS
     # confirmations: users who witnessed / can confirm this happened (truth signal)
@@ -145,6 +247,17 @@ class Incident(models.Model):
         """Return the first photo attached to this incident, or None."""
         return self.media.filter(media_type='photo').first()
 
+    def primary_video(self):
+        """Return the first video attached to this incident, or None."""
+        return self.media.filter(media_type='video').first()
+
+    def primary_media(self):
+        """Return the first media item (video preferred for feed), or None."""
+        return self.media.filter(media_type='video').first() or self.media.filter(media_type='photo').first()
+
+    def has_video(self):
+        return self.media.filter(media_type='video').exists()
+
     class Meta:
         ordering = ['-timestamp']
         indexes  = [
@@ -161,6 +274,7 @@ class Incident(models.Model):
 class IncidentMedia(models.Model):
     MEDIA_TYPES = [
         ('photo', 'Photo'),
+        ('video', 'Video'),
     ]
 
     incident    = models.ForeignKey(
@@ -171,12 +285,19 @@ class IncidentMedia(models.Model):
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE,
                                     related_name='incident_media')
     media_type  = models.CharField(max_length=10, choices=MEDIA_TYPES, default='photo')
-    file        = models.ImageField(upload_to='incident_media/')
+    # FileField (not ImageField) so it accepts both images and videos.
+    file        = models.FileField(upload_to='incident_media/')
     caption     = models.CharField(max_length=300, blank=True, default='')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.media_type} on '{self.incident.title}'"
+
+    def is_video(self):
+        return self.media_type == 'video'
+
+    def is_photo(self):
+        return self.media_type == 'photo'
 
     class Meta:
         ordering = ['uploaded_at']
@@ -222,3 +343,50 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['timestamp']
+
+
+# ---------------------------------------------------------------------------
+# FLAG  (abuse / inappropriate reporting — distinct from dispute)
+# ---------------------------------------------------------------------------
+
+class Flag(models.Model):
+    """
+    A user flagging an incident as abusive or inappropriate.
+
+    Distinct from 'dispute' (which means "I don't think this is accurate").
+    A flag means "this content shouldn't be here" — fake/spam or inappropriate.
+    Flags feed the admin moderation queue; content stays visible until an
+    admin reviews it.
+    """
+    REASON_CHOICES = [
+        ('fake',          'Fake or spam'),
+        ('inappropriate', 'Inappropriate or harmful'),
+    ]
+
+    STATUS_CHOICES = [
+        ('pending',   'Pending review'),
+        ('reviewed',  'Reviewed — no action'),
+        ('actioned',  'Reviewed — content removed'),
+    ]
+
+    incident    = models.ForeignKey(
+                      Incident,
+                      on_delete=models.CASCADE,
+                      related_name='flags'
+                  )
+    flagged_by  = models.ForeignKey(User, on_delete=models.CASCADE,
+                                    related_name='flags_raised')
+    reason      = models.CharField(max_length=20, choices=REASON_CHOICES)
+    note        = models.CharField(max_length=300, blank=True, default='')
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES,
+                                   default='pending')
+    created_at  = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.get_reason_display()} flag on '{self.incident.title}' by {self.flagged_by.username}"
+
+    class Meta:
+        # One flag per user per incident — no flag-spamming.
+        unique_together = ('incident', 'flagged_by')
+        ordering        = ['-created_at']

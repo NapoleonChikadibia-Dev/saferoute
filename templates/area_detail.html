@@ -1,0 +1,427 @@
+{% extends 'base.html' %}
+{% block content %}
+
+{% load static %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="area-dash">
+
+  <!-- Breadcrumb -->
+  <div class="area-breadcrumb">
+    <a href="{% url 'area_search_page' %}">Areas</a>
+    {% for a in ancestors %}
+      <span class="crumb-sep">›</span>
+      <a href="{% url 'area_detail' a.slug %}">{{ a.name }}</a>
+    {% endfor %}
+    <span class="crumb-sep">›</span>
+    <span class="crumb-current">{{ area.name }}</span>
+  </div>
+
+  <!-- Header -->
+  <div class="area-header">
+    <div class="area-header-main">
+      <span class="area-level-badge">{{ area.get_level_display }}</span>
+      <h1>{{ area.name }}</h1>
+      <p class="area-fullpath">{{ area.full_path }}</p>
+    </div>
+    <a href="{% url 'report' %}" class="area-report-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Report here
+    </a>
+  </div>
+
+  <!-- Scope toggle -->
+  <div class="area-scope-toggle">
+    <a href="?scope=sub"
+       class="scope-btn {% if scope == 'sub' %}active{% endif %}">
+       Including sub-areas
+    </a>
+    <a href="?scope=exact"
+       class="scope-btn {% if scope == 'exact' %}active{% endif %}">
+       This area only
+    </a>
+  </div>
+
+  {% if stats.is_thin %}
+  <!-- Thin-data warning -->
+  <div class="area-thin-warning">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>
+      <strong>Limited data</strong> — only {{ stats.total }} report{{ stats.total|pluralize }} here so far.
+      This isn't enough to form a reliable picture. A low number of reports does
+      <em>not</em> mean an area is safe — it may just be under-reported.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Stats -->
+  <div class="area-stats-grid">
+    <div class="stat-card">
+      <span class="stat-value">{{ stats.total }}</span>
+      <span class="stat-label">Total reports</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ stats.verified }}</span>
+      <span class="stat-label">Community-verified</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ stats.recent }}</span>
+      <span class="stat-label">In the last 7 days</span>
+    </div>
+    <div class="stat-card danger-split">
+      <div class="danger-bar">
+        <span class="db-high" title="High danger">{{ stats.danger_high }}</span>
+        <span class="db-med" title="Medium danger">{{ stats.danger_med }}</span>
+        <span class="db-low" title="Low danger">{{ stats.danger_low }}</span>
+      </div>
+      <span class="stat-label">High / Med / Low</span>
+    </div>
+  </div>
+
+  {% if stats.top_types %}
+  <div class="area-types">
+    <span class="types-label">Most common:</span>
+    {% for type, count in stats.top_types %}
+      <span class="type-chip">{{ type|title }} <b>{{ count }}</b></span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Map -->
+  {% if incidents %}
+  <div id="area-map"></div>
+  {% endif %}
+
+  <!-- Incident list -->
+  <div class="area-incidents">
+    <h2>Reports {% if scope == 'sub' %}<span class="scope-note">(incl. sub-areas)</span>{% endif %}</h2>
+
+    {% if incidents %}
+    <div class="area-incident-list">
+      {% for inc in incidents %}
+      <a href="{% url 'incident_detail' inc.id %}" class="area-incident-row danger-{{ inc.danger_level }}">
+        <div class="air-main">
+          <div class="air-top">
+            <span class="air-type">{{ inc.get_type_display }}</span>
+            <span class="air-danger level-{{ inc.danger_level }}">
+              {% if inc.danger_level == 3 %}High{% elif inc.danger_level == 2 %}Medium{% else %}Low{% endif %}
+            </span>
+            {% if inc.verified %}
+            <span class="air-verified"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+            {% endif %}
+          </div>
+          <h3>{{ inc.title }}</h3>
+          <p>{{ inc.description|truncatechars:100 }}</p>
+          <div class="air-meta">
+            <span>{{ inc.location }}</span>
+            {% if inc.area and scope == 'sub' and inc.area.id != area.id %}
+            <span class="air-subarea">{{ inc.area.name }}</span>
+            {% endif %}
+            <span>{{ inc.timestamp|date:"M d, Y" }}</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="area-no-incidents">
+      <p>No reports in this area yet.</p>
+      <a href="{% url 'report' %}" class="btn-primary">Be the first to report</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Related News (collapsed, clearly labeled as context, not reports) ── -->
+  <details class="area-news">
+    <summary class="area-news-summary">
+      <span class="area-news-summary-left">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8M15 18h-5M10 6h8v4h-8z"/></svg>
+        Related news
+        {% if area_news %}<span class="area-news-count">{{ area_news|length }}</span>{% endif %}
+      </span>
+      <svg class="area-news-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+
+    <div class="area-news-note">
+      {% if news_is_widened and news_matched_area %}
+        No news naming {{ area.name }} right now, so showing safety news for <strong>{{ news_matched_area.name }}</strong> (the wider area). These are external news articles — <strong>not SafeRoute reports</strong>, and not verified by the community. For context only.
+      {% else %}
+        News mentioning {{ area.name }} from external outlets — <strong>not SafeRoute reports</strong>, and not verified by the community. Provided for context only.
+      {% endif %}
+    </div>
+
+    {% if area_news %}
+    <div class="area-news-list">
+      {% for article in area_news %}
+      <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="area-news-card">
+        {% if article.image %}
+        <img src="{{ article.image }}" alt="" class="area-news-img" onerror="this.style.display='none'"/>
+        {% endif %}
+        <div class="area-news-body">
+          <span class="area-news-source">{{ article.source }}{% if article.published %} · {{ article.published }}{% endif %}</span>
+          <p class="area-news-title">{{ article.title }}</p>
+          {% if article.description %}<p class="area-news-desc">{{ article.description }}…</p>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="area-news-empty">
+      <p>No related news found for {{ area.name }} right now.</p>
+      <span>National outlets don't always cover specific areas — this doesn't mean anything about safety here.</span>
+    </div>
+    {% endif %}
+  </details>
+</div>
+
+<style>
+  /* ── Related news section ── */
+  .area-news {
+    margin-top: 24px;
+    border: 1px solid var(--border-2);
+    border-radius: 12px;
+    background: var(--panel-2);
+    overflow: hidden;
+  }
+  .area-news-summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; cursor: pointer; list-style: none;
+    font-weight: 600; color: var(--white); font-size: 0.95rem;
+    user-select: none;
+  }
+  .area-news-summary::-webkit-details-marker { display: none; }
+  .area-news-summary:hover { background: var(--panel-3); }
+  .area-news-summary-left { display: flex; align-items: center; gap: 9px; }
+  .area-news-summary-left svg { color: var(--gray-2); }
+  .area-news-count {
+    font-size: 0.72rem; font-weight: 700; color: #e63946;
+    background: rgba(230,57,70,0.12); padding: 1px 8px; border-radius: 10px;
+  }
+  .area-news-chevron { color: var(--gray-2); transition: transform 0.2s ease; }
+  .area-news[open] .area-news-chevron { transform: rotate(180deg); }
+
+  .area-news-note {
+    padding: 0 18px 12px; font-size: 0.78rem; color: var(--gray-2);
+    line-height: 1.5;
+  }
+  .area-news-note strong { color: var(--off-white); }
+
+  .area-news-list { display: flex; flex-direction: column; padding: 0 10px 10px; }
+  .area-news-card {
+    display: flex; gap: 12px; padding: 12px; border-radius: 10px;
+    text-decoration: none; transition: background 0.15s ease;
+  }
+  .area-news-card:hover { background: var(--panel-3); }
+  .area-news-img {
+    width: 84px; height: 64px; object-fit: cover; border-radius: 8px;
+    flex-shrink: 0; background: var(--panel-3);
+  }
+  .area-news-body { display: flex; flex-direction: column; gap: 3px; }
+  .area-news-source {
+    font-size: 0.72rem; color: var(--gray-2); text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .area-news-title { font-size: 0.9rem; color: var(--white); margin: 0; line-height: 1.35; font-weight: 500; }
+  .area-news-desc { font-size: 0.8rem; color: var(--gray-2); margin: 0; line-height: 1.4; }
+
+  .area-news-empty { padding: 4px 18px 18px; }
+  .area-news-empty p { color: var(--off-white); font-size: 0.86rem; margin: 0 0 4px; }
+  .area-news-empty span { color: var(--gray-2); font-size: 0.78rem; line-height: 1.5; }
+</style>
+
+<style>
+  .area-dash { max-width: 1000px; margin: 0 auto; padding: 20px; }
+
+  .area-breadcrumb { font-size: 0.82rem; margin-bottom: 18px; color: var(--gray-2); }
+  .area-breadcrumb a { color: var(--gray-2); text-decoration: none; }
+  .area-breadcrumb a:hover { color: #e63946; }
+  .crumb-sep { margin: 0 7px; opacity: 0.5; }
+  .crumb-current { color: var(--white); font-weight: 600; }
+
+  .area-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .area-level-badge {
+    display: inline-block; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 1px; padding: 3px 10px; border-radius: 10px;
+    background: rgba(230,57,70,0.15); color: #e63946;
+    font-family: var(--font-mono); margin-bottom: 8px;
+  }
+  .area-header-main h1 {
+    font-family: var(--font-display);
+    font-size: 2rem; color: var(--white); margin: 0 0 4px;
+  }
+  .area-fullpath { color: var(--gray-2); font-size: 0.85rem; margin: 0; }
+  .area-report-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 18px; border-radius: 9px;
+    background: linear-gradient(135deg, #e63946, #c1121f);
+    color: var(--white); text-decoration: none; font-size: 0.88rem; font-weight: 600;
+    white-space: nowrap;
+  }
+  .area-report-btn:hover { opacity: 0.92; }
+
+  .area-scope-toggle {
+    display: inline-flex; border: 1px solid var(--border-2);
+    border-radius: 9px; overflow: hidden; margin-bottom: 20px;
+  }
+  .scope-btn {
+    padding: 9px 18px; color: var(--gray-2); text-decoration: none;
+    font-size: 0.83rem; font-weight: 600; transition: all 0.2s ease;
+  }
+  .scope-btn.active { background: rgba(230,57,70,0.18); color: var(--white); }
+  .scope-btn:hover:not(.active) { background: var(--panel-3); }
+
+  .area-thin-warning {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 16px; border-radius: 10px; margin-bottom: 20px;
+    background: rgba(243,156,18,0.1); border: 1px solid rgba(243,156,18,0.35);
+    color: #f39c12; font-size: 0.86rem; line-height: 1.5;
+  }
+  .area-thin-warning svg { flex-shrink: 0; margin-top: 2px; }
+  .area-thin-warning strong { color: #f5b041; }
+  .area-thin-warning em { color: #f5b041; font-style: italic; }
+
+  .area-stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 16px;
+  }
+  .stat-card {
+    padding: 18px; border-radius: 12px; text-align: center;
+    background: var(--panel-2); border: 1px solid var(--border-2);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .stat-value {
+    font-size: 1.9rem; font-weight: 800; color: var(--white);
+    font-family: var(--font-mono);
+  }
+  .stat-label {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--gray-2);
+  }
+  .danger-split .danger-bar {
+    display: flex; gap: 4px; justify-content: center; margin-bottom: 4px;
+  }
+  .danger-bar span {
+    min-width: 34px; padding: 6px 0; border-radius: 6px;
+    font-weight: 700; font-size: 0.95rem; font-family: var(--font-mono);
+  }
+  .db-high { background: rgba(230,57,70,0.2); color: #e63946; }
+  .db-med  { background: rgba(243,156,18,0.2); color: #f39c12; }
+  .db-low  { background: rgba(46,204,113,0.2); color: #2ecc71; }
+
+  .area-types {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 24px;
+  }
+  .types-label { font-size: 0.8rem; color: var(--gray-2); }
+  .type-chip {
+    padding: 5px 12px; border-radius: 20px; font-size: 0.8rem;
+    background: var(--panel-3); border: 1px solid var(--border-2);
+    color: var(--off-white);
+  }
+  .type-chip b { color: var(--white); margin-left: 3px; }
+
+  #area-map {
+    height: 340px; border-radius: 14px; margin-bottom: 28px;
+    border: 1px solid var(--border-2);
+  }
+
+  .area-incidents h2 {
+    font-family: var(--font-display);
+    font-size: 1.3rem; color: var(--white); margin-bottom: 16px;
+  }
+  .scope-note { font-size: 0.8rem; color: var(--gray-2); font-weight: 400; }
+
+  .area-incident-list { display: flex; flex-direction: column; gap: 10px; }
+  .area-incident-row {
+    display: block; padding: 16px 18px; border-radius: 12px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-left: 3px solid var(--border-2);
+    text-decoration: none; transition: all 0.2s ease;
+  }
+  .area-incident-row.danger-3 { border-left-color: #e63946; }
+  .area-incident-row.danger-2 { border-left-color: #f39c12; }
+  .area-incident-row.danger-1 { border-left-color: #2ecc71; }
+  .area-incident-row:hover {
+    background: var(--panel-3); transform: translateX(3px);
+  }
+  .air-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .air-type {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--gray-2); font-family: var(--font-mono);
+  }
+  .air-danger {
+    font-size: 0.68rem; padding: 2px 8px; border-radius: 8px; font-weight: 700;
+  }
+  .air-danger.level-3 { background: rgba(230,57,70,0.18); color: #e63946; }
+  .air-danger.level-2 { background: rgba(243,156,18,0.18); color: #f39c12; }
+  .air-danger.level-1 { background: rgba(46,204,113,0.18); color: #2ecc71; }
+  .air-verified { color: #2ecc71; display: inline-flex; }
+  .area-incident-row h3 { font-size: 1rem; color: var(--white); margin: 0 0 4px; }
+  .area-incident-row p { font-size: 0.85rem; color: var(--gray-2); margin: 0 0 8px; line-height: 1.4; }
+  .air-meta {
+    display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.75rem; color: var(--gray-2);
+  }
+  .air-subarea {
+    padding: 1px 8px; border-radius: 8px; background: rgba(230,57,70,0.12); color: #e88;
+  }
+
+  .area-no-incidents { text-align: center; padding: 40px 20px; color: var(--gray-2); }
+  .area-no-incidents .btn-primary {
+    display: inline-block; margin-top: 12px; padding: 10px 22px; border-radius: 9px;
+    background: linear-gradient(135deg, #e63946, #c1121f); color: var(--white); text-decoration: none;
+  }
+
+  @media (max-width: 600px) {
+    .area-header-main h1 { font-size: 1.6rem; }
+    #area-map { height: 260px; }
+  }
+</style>
+
+{% if incidents %}
+<script>
+  const areaIncidents = {{ incidents_json|safe }};
+  const centerLat = {{ center_lat|default:"null" }};
+  const centerLng = {{ center_lng|default:"null" }};
+
+  // Determine map center: area center if known, else average of incidents
+  let cLat = centerLat, cLng = centerLng;
+  if (cLat === null || cLng === null) {
+    const valid = areaIncidents.filter(i => i.latitude && i.longitude);
+    if (valid.length) {
+      cLat = valid.reduce((s,i) => s + i.latitude, 0) / valid.length;
+      cLng = valid.reduce((s,i) => s + i.longitude, 0) / valid.length;
+    } else { cLat = 9.082; cLng = 8.6753; } // Nigeria fallback
+  }
+
+  const map = L.map('area-map').setView([cLat, cLng], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  const dangerColors = { 1: '#2ecc71', 2: '#f39c12', 3: '#e63946' };
+  const bounds = [];
+
+  areaIncidents.forEach(inc => {
+    if (!inc.latitude || !inc.longitude) return;
+    const color = dangerColors[inc.danger_level] || '#888';
+    const marker = L.circleMarker([inc.latitude, inc.longitude], {
+      radius: 8, fillColor: color, color: '#fff', weight: 1.5,
+      opacity: 1, fillOpacity: 0.85,
+    }).addTo(map);
+    marker.bindPopup(
+      `<strong>${inc.title}</strong><br>` +
+      `<a href="${inc.detail_url}" style="color:#e63946;">View report →</a>`
+    );
+    bounds.push([inc.latitude, inc.longitude]);
+  });
+
+  if (bounds.length > 1) {
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+  }
+</script>
+{% endif %}
+
+{% endblock %}

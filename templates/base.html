@@ -17,6 +17,49 @@
   </script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <style>
+    /* Mobile theme toggle (in the mobile menu) */
+    .mobile-theme-toggle {
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--gray-2);
+      font-family: var(--font-body, inherit);
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 13px 24px;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      min-height: 48px;
+      position: relative;
+    }
+    .mobile-theme-toggle:hover {
+      color: var(--white);
+      background: rgba(255, 255, 255, 0.04);
+      padding-left: 30px;
+    }
+    html.light .mobile-theme-toggle:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+    /* Icon swap: moon in dark mode, sun in light mode */
+    .mobile-theme-toggle .icon-sun,
+    .mobile-theme-toggle .icon-moon {
+      position: absolute;
+      left: 24px;
+      transition: opacity 0.2s ease, transform 0.3s ease, left 0.2s ease;
+    }
+    .mobile-theme-toggle:hover .icon-sun,
+    .mobile-theme-toggle:hover .icon-moon { left: 30px; }
+    .mobile-theme-toggle .icon-sun  { opacity: 0; transform: rotate(90deg) scale(0.5); }
+    .mobile-theme-toggle .icon-moon { opacity: 1; transform: rotate(0deg) scale(1); }
+    html.light .mobile-theme-toggle .icon-sun  { opacity: 1; transform: rotate(0deg) scale(1); }
+    html.light .mobile-theme-toggle .icon-moon { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+    .mobile-theme-label { margin-left: 26px; }
+
     /* Hide page content until preloader finishes */
     html.preloader-active body > *:not(#preloader):not(#particle-canvas) {
       visibility: hidden;
@@ -81,6 +124,7 @@
   <!-- ============================================================
        NAVBAR
   ============================================================ -->
+  {% block topnav %}
   <nav class="navbar">
     <div class="nav-brand">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
@@ -141,6 +185,25 @@
         </svg>
         Feed
       </a>
+      <a href="{% url 'area_search_page' %}" class="nav-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <circle cx="12" cy="10" r="3"/>
+          <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/>
+        </svg>
+        Areas
+      </a>
+      {% if user.is_staff %}
+      <a href="{% url 'moderation_queue' %}" class="nav-link" title="Moderation queue">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Moderation
+      </a>
+      {% endif %}
 
       <div class="nav-user">
         <a href="{% url 'profile' %}" class="nav-link nav-profile">
@@ -201,6 +264,7 @@
     </button>
     {% endif %}
   </nav>
+  {% endblock %}
 
   {% if user.is_authenticated %}
   <div class="mobile-menu" id="mobileMenu">
@@ -237,6 +301,15 @@
       </svg>
       Incidents
     </a>
+    <a href="{% url 'area_search_page' %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+           stroke-linejoin="round">
+        <circle cx="12" cy="10" r="3"/>
+        <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/>
+      </svg>
+      Areas
+    </a>
     <a href="{% url 'profile' %}" class="nav-profile">
       {% if user.profile.avatar %}
         <img src="{{ user.profile.avatar.url }}" alt="avatar" class="nav-avatar"
@@ -246,6 +319,27 @@
       {% endif %}
       {{ user.username }}
     </a>
+    <button class="mobile-theme-toggle" onclick="toggleTheme()">
+      <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+      <span class="mobile-theme-label">Toggle theme</span>
+    </button>
     <form method="POST" action="{% url 'logout' %}">
       {% csrf_token %}
       <button type="submit" class="mobile-logout-btn">
@@ -707,19 +801,10 @@
     // ============================================================
     // THEME TOGGLE
     // ============================================================
-    (function() {
-      // Apply saved theme immediately on load
-      const saved = localStorage.getItem('saferoute_theme');
-      if (saved === 'light') {
-        document.documentElement.classList.add('light');
-      }
-    })();
-
-    function toggleTheme() {
-      const html    = document.documentElement;
-      const isLight = html.classList.toggle('light');
+    window.toggleTheme = function() {
+      const isLight = document.documentElement.classList.toggle('light');
       localStorage.setItem('saferoute_theme', isLight ? 'light' : 'dark');
-    }
+    };
 
     // ============================================================
     // LANDING PAGE — mark navigation to login/register

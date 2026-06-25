@@ -18,9 +18,9 @@
   --bg:      #060810;
   --bg-2:    #080b14;
   --bg-3:    #0d1018;
-  --panel:   #0f1422;
-  --panel-2: #131829;
-  --panel-3: #181d30;
+  --panel:   #111420;
+  --panel-2: #151822;
+  --panel-3: #1a1e2e;
 
   /* Borders */
   --border:   rgba(255, 255, 255, 0.05);
@@ -33,12 +33,12 @@
   --red-dim:   rgba(230, 57, 70, 0.10);
   --red-hover: #c8303c;
 
-  --blue:      #4f8ef7;
-  --blue-glow: rgba(79, 142, 247, 0.18);
-  --blue-dim:  rgba(79, 142, 247, 0.10);
+  --blue:      #E8773A;
+  --blue-glow: rgba(232, 119, 58, 0.22);
+  --blue-dim:  rgba(232, 119, 58, 0.10);
 
-  --cyan:      #22d3ee;
-  --cyan-dim:  rgba(34, 211, 238, 0.10);
+  --cyan:      #F0A060;
+  --cyan-dim:  rgba(240, 160, 96, 0.10);
 
   /* Status */
   --green:  #10b981;
@@ -87,12 +87,12 @@ html.light {
   --red-dim:   rgba(230, 57, 70, 0.08);
   --red-hover: #c8303c;
 
-  --blue:      #3b7de8;
-  --blue-glow: rgba(59, 125, 232, 0.15);
-  --blue-dim:  rgba(59, 125, 232, 0.08);
+  --blue:      #C85E20;
+  --blue-glow: rgba(200, 94, 32, 0.18);
+  --blue-dim:  rgba(200, 94, 32, 0.08);
 
-  --cyan:      #0891b2;
-  --cyan-dim:  rgba(8, 145, 178, 0.08);
+  --cyan:      #D4813A;
+  --cyan-dim:  rgba(212, 129, 58, 0.08);
 
   /* Status */
   --green:  #059669;
@@ -696,14 +696,27 @@ body::before {
   -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 
-/* Subtle top accent line */
+/* Scanning pulse — dashes travel left to right like a signal sweep */
+@keyframes navScan {
+  from { background-position: 0px 0; }
+  to   { background-position: 32px 0; }
+}
+
 .navbar::after {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--red) 30%, var(--blue) 70%, transparent 100%);
-  opacity: 0.4;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--red) 0px,
+    var(--red) 10px,
+    transparent 10px,
+    transparent 32px
+  );
+  background-size: 32px 1px;
+  opacity: 0.35;
+  animation: navScan 1.2s linear infinite;
 }
 
 .nav-brand {
@@ -961,10 +974,11 @@ body::before {
 .auth-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0; left: 16px; right: 16px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--red), var(--blue), transparent);
-  opacity: 0.6;
+  background: var(--red);
+  opacity: 0.8;
+  border-radius: 0 0 2px 2px;
 }
 
 .auth-card h2 {
@@ -1011,9 +1025,9 @@ body::before {
   background-color: var(--bg);
   background-image:
     radial-gradient(circle at 20% 40%, rgba(230,57,70,0.06) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(79,142,247,0.04) 0%, transparent 40%),
-    repeating-linear-gradient(0deg, rgba(79,142,247,0.02) 0px, rgba(79,142,247,0.02) 1px, transparent 1px, transparent 40px),
-    repeating-linear-gradient(90deg, rgba(79,142,247,0.02) 0px, rgba(79,142,247,0.02) 1px, transparent 1px, transparent 40px);
+    radial-gradient(circle at 80% 20%, rgba(232,119,58,0.04) 0%, transparent 40%),
+    repeating-linear-gradient(0deg, rgba(232,119,58,0.02) 0px, rgba(232,119,58,0.02) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(232,119,58,0.02) 0px, rgba(232,119,58,0.02) 1px, transparent 1px, transparent 40px);
   pointer-events: none;
   z-index: 0;
 }
@@ -1026,11 +1040,12 @@ body::before {
   background: rgba(10,12,22,0.96);
   backdrop-filter: blur(24px) saturate(160%);
   border-radius: 28px;
-  border: 1px solid rgba(230,57,70,0.2);
+  border: 1px solid rgba(230,57,70,0.28);
   overflow: hidden;
   box-shadow:
     0 24px 60px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(255,255,255,0.03) inset;
+    0 0 0 1px rgba(255,255,255,0.03) inset,
+    inset 0 1px 0 rgba(232,119,58,0.08);
   position: relative;
   z-index: 1;
   transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
@@ -1194,7 +1209,7 @@ html.light .auth-back-btn:hover {
   bottom: 0; left: 0;
   width: 0%;
   height: 2px;
-  background: linear-gradient(90deg, var(--red), var(--blue));
+  background: linear-gradient(90deg, var(--red), var(--cyan));
   transition: width 0.3s var(--ease);
   border-radius: 2px;
 }
@@ -1594,6 +1609,7 @@ html.light .auth-back-btn:hover {
 
 .stat-item.red::before   { background: var(--red);   box-shadow: 0 0 8px var(--red-glow); }
 .stat-item.green::before { background: var(--green); box-shadow: 0 0 8px rgba(16,185,129,0.3); }
+.stat-item.amber::before { background: var(--blue);  box-shadow: 0 0 8px var(--blue-glow); }
 .stat-item.blue::before  { background: var(--blue);  box-shadow: 0 0 8px var(--blue-glow); }
 
 .stat-item:hover {
@@ -2810,26 +2826,23 @@ html.light .auth-back-btn:hover {
 .hero-eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: var(--red-dim);
-  border: 1px solid rgba(230, 57, 70, 0.2);
-  color: var(--red);
-  padding: 6px 16px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 2px;
+  gap: 0;
+  background: transparent;
+  border: none;
+  border-left: 3px solid var(--red);
+  color: var(--gray-2);
+  padding: 4px 0 4px 12px;
+  border-radius: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
   margin-bottom: 24px;
+  font-family: var(--font-mono);
 }
 
 .hero-eyebrow::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  background: var(--red);
-  border-radius: 50%;
-  animation: blink 1.5s ease-in-out infinite;
+  content: none;
 }
 
 @keyframes blink {
@@ -2856,10 +2869,24 @@ html.light .auth-back-btn:hover {
 }
 
 .highlight {
-  color: transparent;
-  background: linear-gradient(135deg, var(--red) 0%, #FF6B6B 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
+  color: var(--white);
+  background: none;
+  -webkit-background-clip: unset;
+  background-clip: unset;
+  position: relative;
+  display: inline-block;
+}
+
+.highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--red);
+  border-radius: 2px;
+  opacity: 0.75;
 }
 
 .hero-subtitle {
@@ -3009,32 +3036,32 @@ html.light .auth-back-btn:hover {
   left: 50%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(232, 119, 58, 0.22);
   pointer-events: none;
 }
 
 .ring-1 {
   width: 25%;
   height: 25%;
-  border-color: rgba(59, 130, 246, 0.2);
+  border-color: rgba(232, 119, 58, 0.15);
 }
 
 .ring-2 {
   width: 50%;
   height: 50%;
-  border-color: rgba(59, 130, 246, 0.25);
+  border-color: rgba(232, 119, 58, 0.20);
 }
 
 .ring-3 {
   width: 75%;
   height: 75%;
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(232, 119, 58, 0.25);
 }
 
 .ring-4 {
   width: 100%;
   height: 100%;
-  border-color: rgba(59, 130, 246, 0.35);
+  border-color: rgba(232, 119, 58, 0.30);
   border-width: 2px;
 }
 
@@ -3045,7 +3072,7 @@ html.light .auth-back-btn:hover {
   left: 0;
   right: 0;
   height: 1px;
-  background: rgba(59, 130, 246, 0.4);
+  background: rgba(232, 119, 58, 0.35);
   transform: translateY(-50%);
   pointer-events: none;
 }
@@ -3262,9 +3289,9 @@ html.light .auth-back-btn:hover {
   right: 0;
   bottom: 0;
   background-image:
-    radial-gradient(circle at center, transparent 0%, transparent 48%, rgba(59, 130, 246, 0.1) 50%, transparent 52%),
-    repeating-linear-gradient(0deg, rgba(59, 130, 246, 0.05) 0px, rgba(59, 130, 246, 0.05) 1px, transparent 1px, transparent 10%),
-    repeating-linear-gradient(90deg, rgba(59, 130, 246, 0.05) 0px, rgba(59, 130, 246, 0.05) 1px, transparent 1px, transparent 10%);
+    radial-gradient(circle at center, transparent 0%, transparent 48%, rgba(232, 119, 58, 0.08) 50%, transparent 52%),
+    repeating-linear-gradient(0deg, rgba(232, 119, 58, 0.04) 0px, rgba(232, 119, 58, 0.04) 1px, transparent 1px, transparent 10%),
+    repeating-linear-gradient(90deg, rgba(232, 119, 58, 0.04) 0px, rgba(232, 119, 58, 0.04) 1px, transparent 1px, transparent 10%);
   pointer-events: none;
   border-radius: 50%;
 }
@@ -4306,7 +4333,7 @@ html.light .auth-back-btn:hover {
   }
 
   .nav-brand {
-    font-size: 1.2rem;
+    font-size: 0.8rem;
   }
 
   .container {
@@ -4392,6 +4419,12 @@ html.light .auth-back-btn:hover {
   .hero-stat {
     align-items: center;
   }
+
+  .landing-nav-links {
+  display: flex;
+  align-items: center;
+  justify-content:space-between;
+}
 
   .features h2,
   .how-it-works h2,

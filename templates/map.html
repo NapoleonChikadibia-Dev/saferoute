@@ -122,6 +122,8 @@
             <span class="news-live-badge"><svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="10"/></svg> Live</span>
         </div>
 
+        <div id="news-region-label" class="news-region-label" style="display:none;"></div>
+
         <!-- Region Search -->
         <div class="news-region-search">
             <form method="GET" action="{% url 'map' %}">
@@ -133,6 +135,7 @@
             </form>
         </div>
 
+        <div id="news-list-container">
         {% if news_articles %}
             <div class="news-list">
             {% for article in news_articles %}
@@ -159,21 +162,33 @@
             </div>
         {% else %}
             <div class="news-empty">
-                <p>Loading news...</p>
+                <p>No safety news right now.</p>
                 <p style="font-size:0.8rem;margin-top:8px;color:#555">
-                    Make sure your NEWS_API_KEY is set in settings.py
+                    Search a city or area above to see related news.
                 </p>
             </div>
         {% endif %}
+        </div>
 
         <p class="news-footer">
-            Powered by <a href="https://newsapi.org" target="_blank">NewsAPI</a>
+            Safety news from public news feeds · context only, not SafeRoute reports
         </p>
     </div>
 
 </div>
 
 <style>
+  .news-region-label {
+    padding: 8px 14px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    color: var(--gray-2, #9aa);
+    background: rgba(230,57,70,0.08);
+    border-left: 2px solid #e63946;
+    border-radius: 4px;
+  }
+  .news-region-label strong { color: var(--white, #fff); }
+
     /* Location search dropdown styles — add to map.html or style.css */
   .map-search-bar .loc-search-wrapper { position: relative; width: 100%; }
 
@@ -418,6 +433,10 @@
 
                         map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
 
+                        // Update the news sidebar for this neighbourhood (AJAX, no reload).
+                        // Use the short place name (first part) for the best news match.
+                        updateNewsForRegion(parts[0]);
+
                         L.popup()
                             .setLatLng([lat, lon])
                             .setContent(`
@@ -454,6 +473,54 @@
             mapLocDropdown.classList.remove('open');
         }
     });
+
+    // ── AJAX: refresh the news sidebar for a searched neighbourhood ──
+    function escapeHtml(s) {
+        return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function updateNewsForRegion(region) {
+        const container = document.getElementById('news-list-container');
+        const label = document.getElementById('news-region-label');
+        if (!container) return;
+
+        // Loading state
+        container.innerHTML = '<div class="news-empty"><p>Loading news for ' + escapeHtml(region) + '…</p></div>';
+        if (label) {
+            label.style.display = 'block';
+            label.innerHTML = 'Showing news for <strong>' + escapeHtml(region) + '</strong>';
+        }
+
+        fetch('/api/news/?region=' + encodeURIComponent(region))
+            .then(res => res.json())
+            .then(data => {
+                if (!data.articles || !data.articles.length) {
+                    container.innerHTML =
+                        '<div class="news-empty"><p>No safety news mentioning ' + escapeHtml(region) + ' right now.</p>' +
+                        '<p style="font-size:0.8rem;margin-top:8px;color:#555">News outlets don\'t always cover specific areas — this doesn\'t mean anything about safety here.</p></div>';
+                    return;
+                }
+                let html = '<div class="news-list">';
+                data.articles.forEach(a => {
+                    html += '<a href="' + escapeHtml(a.url) + '" target="_blank" rel="noopener noreferrer" class="news-card">';
+                    if (a.image) {
+                        html += '<img src="' + escapeHtml(a.image) + '" alt="news" class="news-image" onerror="this.style.display=\'none\'"/>';
+                    }
+                    html += '<div class="news-content">' +
+                            '<span class="news-source">' + escapeHtml(a.source) + (a.published ? ' · ' + escapeHtml(a.published) : '') + '</span>' +
+                            '<p class="news-title">' + escapeHtml(a.title) + '</p>' +
+                            (a.description ? '<p class="news-desc">' + escapeHtml(a.description) + '…</p>' : '') +
+                            '</div></a>';
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            })
+            .catch(() => {
+                container.innerHTML = '<div class="news-empty"><p>Couldn\'t load news right now.</p></div>';
+            });
+    }
+
 </script>
 
 {% endblock %}

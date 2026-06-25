@@ -1,7 +1,18 @@
 # incidents/admin.py
 
 from django.contrib import admin
-from .models import Incident, Comment, UserProfile
+from .models import Incident, Comment, UserProfile, Area
+
+
+@admin.register(Area)
+class AreaAdmin(admin.ModelAdmin):
+    list_display  = ['name', 'level', 'parent', 'is_verified', 'needs_review', 'created_by', 'created_at']
+    list_filter   = ['needs_review', 'level', 'is_verified']
+    search_fields = ['name', 'slug']
+    list_editable = ['is_verified', 'needs_review']
+    readonly_fields = ['created_at']
+    ordering      = ['-created_at', 'level', 'name']
+    autocomplete_fields = ['parent']
 
 
 @admin.register(Incident)

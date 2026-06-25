@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="area-search-page">
+  <div class="area-search-hero">
+    <h1>Explore an Area</h1>
+    <p>Search any country, state, city, or neighbourhood to see its safety picture — incidents, trends, and what residents have reported.</p>
+
+    <div class="area-search-box">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="area-search-input" autocomplete="off"
+             placeholder="Search an area (e.g. Lekki, Lagos, Ikeja)…"/>
+      <div class="area-search-dropdown" id="area-search-dropdown"></div>
+    </div>
+  </div>
+
+  <div class="area-browse">
+    <h2>Browse by Country</h2>
+    <div class="area-country-grid">
+      {% for country in countries %}
+      <a href="{% url 'area_detail' country.slug %}" class="area-country-card">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/></svg>
+        {{ country.name }}
+      </a>
+      {% empty %}
+      <p class="area-empty">No areas yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<style>
+  .area-search-page { max-width: 900px; margin: 0 auto; padding: 20px; }
+  .area-search-hero { text-align: center; padding: 40px 0 32px; }
+  .area-search-hero h1 {
+    font-family: var(--font-display);
+    font-size: 2.2rem; margin-bottom: 12px; color: var(--white);
+  }
+  .area-search-hero p {
+    color: var(--gray-2); max-width: 560px; margin: 0 auto 28px;
+    line-height: 1.5; font-size: 0.95rem;
+  }
+  .area-search-box {
+    position: relative; max-width: 560px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px; border-radius: 14px;
+    background: var(--panel);
+    border: 1px solid var(--border-2);
+  }
+  .area-search-box:focus-within { border-color: rgba(230,57,70,0.5); }
+  .area-search-box svg { color: var(--gray-2); flex-shrink: 0; }
+  .area-search-box input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--white); font-size: 1rem;
+  }
+  .area-search-dropdown {
+    display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--panel); border: 1px solid rgba(230,57,70,0.3);
+    border-radius: 12px; z-index: 9999; max-height: 320px; overflow-y: auto;
+    box-shadow: 0 14px 36px rgba(0,0,0,0.5); text-align: left;
+  }
+  .area-search-dropdown.open { display: block; }
+  .area-search-result {
+    padding: 12px 16px; cursor: pointer; transition: background 0.15s ease;
+    border-bottom: 1px solid var(--panel-3); text-decoration: none; display: block;
+  }
+  .area-search-result:hover { background: rgba(230,57,70,0.12); }
+  .area-search-result strong { color: var(--white); font-size: 0.92rem; }
+  .area-search-result .path { color: var(--gray-2); font-size: 0.76rem; margin-top: 2px; }
+  .area-search-result .level-tag {
+    display: inline-block; font-size: 0.68rem; padding: 2px 8px; border-radius: 10px;
+    background: var(--border); color: var(--gray-2); margin-left: 6px;
+  }
+  .area-search-empty { padding: 16px; color: var(--gray-2); text-align: center; font-size: 0.85rem; }
+
+  .area-browse { margin-top: 40px; }
+  .area-browse h2 {
+    font-family: var(--font-display);
+    font-size: 1.3rem; margin-bottom: 18px; color: var(--white);
+  }
+  .area-country-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;
+  }
+  .area-country-card {
+    display: flex; align-items: center; gap: 9px;
+    padding: 14px 16px; border-radius: 10px;
+    background: var(--panel-2); border: 1px solid var(--border-2);
+    color: var(--white); text-decoration: none; font-size: 0.9rem; font-weight: 500;
+    transition: all 0.2s ease;
+  }
+  .area-country-card:hover {
+    background: rgba(230,57,70,0.1); border-color: rgba(230,57,70,0.35);
+    transform: translateY(-2px);
+  }
+  .area-country-card svg { color: #e63946; flex-shrink: 0; }
+  .area-empty { color: var(--gray-2); }
+</style>
+
+<script>
+  const searchInput = document.getElementById('area-search-input');
+  const searchDrop  = document.getElementById('area-search-dropdown');
+  let searchTimer;
+
+  searchInput.addEventListener('input', function () {
+    const q = this.value.trim();
+    clearTimeout(searchTimer);
+    if (q.length < 2) { searchDrop.classList.remove('open'); return; }
+    searchTimer = setTimeout(() => {
+      fetch(`/api/areas/search/?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.areas.length) {
+            searchDrop.innerHTML = '<div class="area-search-empty">No areas found for that search.</div>';
+            searchDrop.classList.add('open');
+            return;
+          }
+          const levelNames = {1:'Country', 2:'State', 3:'City', 4:'Local'};
+          searchDrop.innerHTML = data.areas.map(a => `
+            <a href="/areas/${a.slug || ''}/" class="area-search-result" data-id="${a.id}">
+              <strong>${a.name}</strong><span class="level-tag">${levelNames[a.level] || ''}</span>
+              <div class="path">${a.full_path}</div>
+            </a>
+          `).join('');
+          searchDrop.classList.add('open');
+        });
+    }, 300);
+  });
+
+  document.addEventListener('click', e => {
+    if (!searchInput.contains(e.target) && !searchDrop.contains(e.target)) {
+      searchDrop.classList.remove('open');
+    }
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="mod-page">
+  <div class="mod-header">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Moderation Queue
+    </h1>
+    <p>Review content flagged by the community. Hiding is reversible — hidden content is removed from public view but kept on record.</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="mod-tabs">
+    <a href="?view=pending" class="mod-tab {% if view == 'pending' %}active{% endif %}">
+      Pending review
+      {% if pending_count %}<span class="mod-tab-badge">{{ pending_count }}</span>{% endif %}
+    </a>
+    <a href="?view=hidden" class="mod-tab {% if view == 'hidden' %}active{% endif %}">
+      Hidden content
+      {% if hidden_count %}<span class="mod-tab-badge hidden-badge">{{ hidden_count }}</span>{% endif %}
+    </a>
+  </div>
+
+  {% if incidents %}
+  <div class="mod-list">
+    {% for inc in incidents %}
+    <div class="mod-card">
+      <div class="mod-card-body">
+        <div class="mod-card-main">
+          <div class="mod-card-top">
+            <span class="mod-type">{{ inc.get_type_display }}</span>
+            <span class="mod-danger danger-{{ inc.danger_level }}">
+              {% if inc.danger_level == 3 %}High{% elif inc.danger_level == 2 %}Medium{% else %}Low{% endif %}
+            </span>
+            {% if inc.is_hidden %}
+            <span class="mod-hidden-tag">Hidden</span>
+            {% endif %}
+          </div>
+          <h3>{{ inc.title }}</h3>
+          <p class="mod-desc">{{ inc.description|truncatechars:160 }}</p>
+          <div class="mod-meta">
+            <span>by @{{ inc.reported_by.username }}</span>
+            <span>{{ inc.location }}</span>
+            <span>{{ inc.timestamp|date:"M d, Y" }}</span>
+          </div>
+
+          {% if inc.media.all %}
+          <div class="mod-media-note">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            {{ inc.media.all|length }} media attachment(s) — review on the detail page
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Flags on this incident -->
+        <div class="mod-flags">
+          <div class="mod-flags-title">
+            {% if inc.is_hidden %}
+              Hidden {{ inc.hidden_at|date:"M d" }}{% if inc.hidden_by %} by {{ inc.hidden_by.username }}{% endif %}
+            {% else %}
+              Flags ({{ inc.flags.all|length }})
+            {% endif %}
+          </div>
+          {% if not inc.is_hidden %}
+          <ul class="mod-flag-list">
+            {% for flag in inc.flags.all %}
+            {% if flag.status == 'pending' %}
+            <li class="mod-flag-item reason-{{ flag.reason }}">
+              <span class="mod-flag-reason">{{ flag.get_reason_display }}</span>
+              <span class="mod-flag-by">@{{ flag.flagged_by.username }} · {{ flag.created_at|date:"M d" }}</span>
+              {% if flag.note %}<span class="mod-flag-note">"{{ flag.note }}"</span>{% endif %}
+            </li>
+            {% endif %}
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="mod-actions">
+        <a href="{% url 'incident_detail' inc.id %}" class="mod-btn mod-btn-view" target="_blank">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          View full
+        </a>
+
+        {% if inc.is_hidden %}
+        <form method="POST" action="{% url 'moderation_unhide' inc.id %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="mod-btn mod-btn-restore">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Restore
+          </button>
+        </form>
+        {% else %}
+        <form method="POST" action="{% url 'moderation_dismiss' inc.id %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="mod-btn mod-btn-dismiss">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            It's fine
+          </button>
+        </form>
+        <form method="POST" action="{% url 'moderation_hide' inc.id %}" style="display:inline;"
+              onsubmit="return confirm('Hide this content from public view? You can restore it later.');">
+          {% csrf_token %}
+          <button type="submit" class="mod-btn mod-btn-hide">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+            Take down
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="mod-empty">
+    {% if view == 'hidden' %}
+    <p>No hidden content.</p>
+    <span>Content you hide will appear here, where you can restore it.</span>
+    {% else %}
+    <p>Nothing to review.</p>
+    <span>When users flag content as fake or inappropriate, it'll show up here.</span>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .mod-page { max-width: 1000px; margin: 0 auto; padding: 20px; }
+  .mod-header h1 {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-display); font-size: 1.8rem; color: var(--white); margin: 0 0 8px;
+  }
+  .mod-header h1 svg { color: #e63946; }
+  .mod-header p { color: var(--gray-2); font-size: 0.9rem; line-height: 1.5; margin: 0 0 24px; max-width: 640px; }
+
+  .mod-tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 1px solid var(--border-2); }
+  .mod-tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 20px; color: var(--gray-2); text-decoration: none;
+    font-size: 0.9rem; font-weight: 600; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.2s ease;
+  }
+  .mod-tab:hover { color: var(--white); }
+  .mod-tab.active { color: var(--white); border-bottom-color: #e63946; }
+  .mod-tab-badge {
+    font-size: 0.72rem; font-weight: 700; color: #e63946;
+    background: rgba(230,57,70,0.14); padding: 1px 8px; border-radius: 10px;
+  }
+  .mod-tab-badge.hidden-badge { color: var(--gray-2); background: var(--panel-3); }
+
+  .mod-list { display: flex; flex-direction: column; gap: 14px; }
+  .mod-card {
+    border: 1px solid var(--border-2); border-radius: 14px;
+    background: var(--panel-2); overflow: hidden;
+  }
+  .mod-card-body { display: flex; gap: 20px; padding: 18px; flex-wrap: wrap; }
+  .mod-card-main { flex: 1; min-width: 280px; }
+  .mod-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .mod-type {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--gray-2); font-family: var(--font-mono);
+  }
+  .mod-danger { font-size: 0.68rem; padding: 2px 8px; border-radius: 8px; font-weight: 700; }
+  .mod-danger.danger-3 { background: rgba(230,57,70,0.18); color: #e63946; }
+  .mod-danger.danger-2 { background: rgba(243,156,18,0.18); color: #f39c12; }
+  .mod-danger.danger-1 { background: rgba(46,204,113,0.18); color: #2ecc71; }
+  .mod-hidden-tag {
+    font-size: 0.68rem; padding: 2px 8px; border-radius: 8px; font-weight: 700;
+    background: var(--panel-3); color: var(--gray-2);
+  }
+  .mod-card-main h3 { color: var(--white); font-size: 1.05rem; margin: 0 0 6px; }
+  .mod-desc { color: var(--gray-2); font-size: 0.86rem; line-height: 1.5; margin: 0 0 10px; }
+  .mod-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.76rem; color: var(--gray-2); }
+  .mod-media-note {
+    display: flex; align-items: center; gap: 6px; margin-top: 10px;
+    font-size: 0.76rem; color: #f39c12;
+  }
+
+  .mod-flags {
+    min-width: 230px; max-width: 300px;
+    background: var(--panel-3); border-radius: 10px; padding: 12px 14px;
+  }
+  .mod-flags-title { font-size: 0.78rem; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+  .mod-flag-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .mod-flag-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--panel); }
+  .mod-flag-item.reason-fake { border-left: 2px solid #f39c12; }
+  .mod-flag-item.reason-inappropriate { border-left: 2px solid #e63946; }
+  .mod-flag-reason { font-size: 0.8rem; font-weight: 600; color: var(--white); }
+  .mod-flag-by { font-size: 0.72rem; color: var(--gray-2); }
+  .mod-flag-note { font-size: 0.76rem; color: var(--off-white); font-style: italic; margin-top: 2px; }
+
+  .mod-actions {
+    display: flex; gap: 8px; padding: 12px 18px; flex-wrap: wrap;
+    border-top: 1px solid var(--border); background: var(--panel);
+  }
+  .mod-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 9px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border-2); background: var(--panel-2);
+    color: var(--white); text-decoration: none; transition: all 0.2s ease;
+    font-family: var(--font-body, inherit);
+  }
+  .mod-btn-view:hover { border-color: var(--gray-2); }
+  .mod-btn-dismiss { color: #2ecc71; border-color: rgba(46,204,113,0.3); }
+  .mod-btn-dismiss:hover { background: rgba(46,204,113,0.1); }
+  .mod-btn-hide { color: #e63946; border-color: rgba(230,57,70,0.3); }
+  .mod-btn-hide:hover { background: rgba(230,57,70,0.1); }
+  .mod-btn-restore { color: #3b7de8; border-color: rgba(59,125,232,0.3); }
+  .mod-btn-restore:hover { background: rgba(59,125,232,0.1); }
+
+  .mod-empty { text-align: center; padding: 60px 20px; }
+  .mod-empty p { color: var(--white); font-size: 1rem; margin: 0 0 6px; }
+  .mod-empty span { color: var(--gray-2); font-size: 0.85rem; }
+</style>
+
+{% endblock %}

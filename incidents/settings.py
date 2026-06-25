@@ -20,6 +20,11 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost', cast=Csv())
 
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS = [f'https://{RENDER_EXTERNAL_HOSTNAME}']
+
 
 # ---------------------------------------------------------------------------
 # APPLICATIONS
@@ -71,16 +76,29 @@ WSGI_APPLICATION = 'saferoute.wsgi.application'
 # DATABASE
 # ---------------------------------------------------------------------------
 
-DATABASES = {
-    'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
-        'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
-        'USER': config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default=''),
-        'PORT': config('DB_PORT', default=''),
+import dj_database_url
+
+DATABASE_URL = config('DATABASE_URL', default='')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+            'NAME': config('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
+            'USER': config('DB_USER', default=''),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default=''),
+            'PORT': config('DB_PORT', default=''),
+        }
+    }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -210,4 +228,8 @@ LOGGING = {
 }
 
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 20 * 1024 * 1024  # 20MB max photo upload
+# Upload limits — videos up to 50MB, so allow headroom above that.
+# DATA_UPLOAD_MAX_MEMORY_SIZE guards form POST size; FILE_UPLOAD_MAX_MEMORY_SIZE
+# controls when a file is streamed to a temp file vs kept in memory.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 60 * 1024 * 1024  # 60MB (headroom over 50MB video cap)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024   # files >5MB stream to disk (saves RAM)

@@ -31,6 +31,26 @@
 
     <form method="POST" id="report-form" enctype="multipart/form-data">
         {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="form-error-box">
+          <div class="form-error-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Please fix the following:
+          </div>
+          <ul class="form-error-list">
+            {% for err in form.non_field_errors %}
+              <li>{{ err }}</li>
+            {% endfor %}
+            {% for field in form %}
+              {% for err in field.errors %}
+                <li><b>{{ field.label }}:</b> {{ err }}</li>
+              {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
         <div class="form-grid">
 
             <div class="form-group">
@@ -79,6 +99,45 @@
                 </select>
             </div>
 
+            <!-- ── AREA (auto-derived from the map pin) ── -->
+            <div class="form-group full-width">
+                <label>Area <span class="label-hint">(detected automatically from your pin)</span></label>
+
+                <!-- Before a pin is dropped -->
+                <div id="area-awaiting" class="area-awaiting">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    Drop a pin on the map above and we'll detect the area.
+                </div>
+
+                <!-- While resolving -->
+                <div id="area-resolving" class="area-autodetect detecting" style="display:none;">
+                    ◌ Detecting area from your pin…
+                </div>
+
+                <!-- Resolved confirmation -->
+                <div id="area-resolved" class="area-resolved" style="display:none;">
+                    <div class="area-resolved-main">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                        <span id="area-resolved-path"></span>
+                    </div>
+                    <span class="area-resolved-hint">Detected from pin · auto-saved</span>
+                </div>
+
+                <!-- Fallback: geocode failed → type the area name -->
+                <div id="area-fallback" class="area-fallback" style="display:none;">
+                    <p class="area-fallback-hint">
+                        ⚠️ Couldn't detect an area from that spot. Type the area name and we'll record it.
+                    </p>
+                    <input type="text" id="area-fallback-input" maxlength="120"
+                           placeholder="e.g. Ikeja, Lagos" oninput="onFallbackInput()"/>
+                </div>
+
+                <!-- Hidden fields the backend reads -->
+                <input type="hidden" name="area_id"         id="area-id-field"/>
+                <input type="hidden" name="new_area_name"   id="new-area-name-field"/>
+                <input type="hidden" name="new_area_parent" id="new-area-parent-field"/>
+            </div>
+
             <!-- Location Name with autocomplete -->
             <div class="form-group">
                 <label>Location Name</label>
@@ -117,8 +176,8 @@
               <polyline points="21 15 16 10 5 21"/>
             </svg>
             <div>
-              <h4>Attach Photos <span class="optional-tag">Optional</span></h4>
-              <p>Add photos to make your report more credible. Max 5 photos, 10MB each.</p>
+              <h4>Attach Photos &amp; Videos <span class="optional-tag">Optional</span></h4>
+              <p>Add photos or videos to make your report more credible. Up to 5 items — photos max 10MB, videos max 50MB.</p>
             </div>
           </div>
 
@@ -130,14 +189,33 @@
               <polyline points="17 8 12 3 7 8"/>
               <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
-            <p>Click to upload or drag photos here</p>
-            <span>PNG, JPG, WEBP up to 10MB each</span>
+            <p>Click to upload or drag photos &amp; videos here</p>
+            <span>Photos (JPG, PNG, WEBP) up to 10MB · Videos (MP4, MOV, WEBM) up to 50MB</span>
           </div>
 
-          <input type="file" id="photo-input" name="photos" multiple accept="image/*"
+          <input type="file" id="photo-input" name="media" multiple accept="image/*,video/*"
                  style="display:none" onchange="handlePhotoSelect(this)"/>
 
           <div class="photo-previews" id="photo-previews"></div>
+        </div>
+
+        <!-- ── Content guidelines notice + required acknowledgement ── -->
+        <div class="report-guidelines">
+          <div class="report-guidelines-head">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Before you post
+          </div>
+          <ul class="report-guidelines-list">
+            <li><strong>Report places and incidents, not people.</strong> Don't post home addresses, names, license plates, or anything identifying a specific individual.</li>
+            <li>Only report things you genuinely witnessed or have good reason to believe. Don't post rumours or false claims.</li>
+            <li>No graphic, violent, or disturbing media. No harassment.</li>
+          </ul>
+          <a href="{% url 'guidelines' %}" target="_blank" class="report-guidelines-link">Read the full community guidelines →</a>
+
+          <label class="report-guidelines-check">
+            <input type="checkbox" id="guidelines-ack" name="guidelines_ack" required />
+            <span>I understand and my report follows these guidelines.</span>
+          </label>
         </div>
 
         <button type="submit" class="btn-primary" id="submit-btn">
@@ -150,6 +228,56 @@
 </div>
 
 <style>
+  /* ── Content guidelines notice + checkbox ── */
+  .report-guidelines {
+    background: var(--panel-2, rgba(255,255,255,0.03));
+    border: 1px solid var(--border-2, rgba(255,255,255,0.1));
+    border-left: 3px solid #e63946;
+    border-radius: var(--radius-md, 10px);
+    padding: 16px 18px;
+    margin: 8px 0 18px;
+  }
+  .report-guidelines-head {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--white, #fff); font-weight: 700; font-size: 0.92rem; margin-bottom: 10px;
+  }
+  .report-guidelines-head svg { color: #e63946; }
+  .report-guidelines-list {
+    margin: 0 0 12px; padding-left: 20px;
+    color: var(--gray-2, #9aa); font-size: 0.83rem; line-height: 1.65;
+  }
+  .report-guidelines-list li { margin-bottom: 6px; }
+  .report-guidelines-list strong { color: var(--off-white, #ddd); }
+  .report-guidelines-link {
+    display: inline-block; margin-bottom: 14px;
+    color: #e63946; font-size: 0.82rem; font-weight: 600; text-decoration: none;
+  }
+  .report-guidelines-link:hover { text-decoration: underline; }
+  .report-guidelines-check {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding-top: 12px; border-top: 1px solid var(--border, rgba(255,255,255,0.06));
+    cursor: pointer; color: var(--off-white, #ddd); font-size: 0.86rem; line-height: 1.5;
+  }
+  .report-guidelines-check input[type="checkbox"] {
+    margin-top: 2px; width: 17px; height: 17px; accent-color: #e63946; cursor: pointer; flex-shrink: 0;
+  }
+
+  .form-error-box {
+    background: rgba(230,57,70,0.1);
+    border: 1px solid rgba(230,57,70,0.4);
+    border-radius: var(--radius-md, 10px);
+    padding: 14px 16px;
+    margin-bottom: 20px;
+  }
+  .form-error-title {
+    display: flex; align-items: center; gap: 8px;
+    color: #e63946; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;
+  }
+  .form-error-list {
+    margin: 0; padding-left: 20px; color: var(--off-white, #e88);
+    font-size: 0.85rem; line-height: 1.6;
+  }
+  .form-error-list li { margin-bottom: 3px; }
   /* ── Location Search Bar (above map) ── */
   .loc-search-bar {
     margin-bottom: 12px;
@@ -217,6 +345,61 @@
   .loc-dropdown.open { display: block; }
   .loc-dropdown::-webkit-scrollbar { width: 4px; }
   .loc-dropdown::-webkit-scrollbar-thumb { background: rgba(230,57,70,0.3); border-radius: 4px; }
+
+  /* ── AREA (pin-driven) ── */
+  .label-hint {
+    font-weight: 400; font-size: 0.78rem;
+    color: var(--gray, #9aa); text-transform: none; letter-spacing: 0;
+  }
+  .area-awaiting {
+    display: flex; align-items: center; gap: 8px;
+    padding: 11px 14px; border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed rgba(255,255,255,0.18);
+    color: var(--gray, #9aa); font-size: 0.83rem;
+  }
+  .area-resolved {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px 15px; border-radius: 8px;
+    background: rgba(46,204,113,0.12);
+    border: 1px solid rgba(46,204,113,0.4);
+  }
+  .area-resolved-main {
+    display: flex; align-items: center; gap: 9px;
+    color: #2ecc71; font-size: 0.92rem; font-weight: 600;
+  }
+  .area-resolved-hint {
+    font-size: 0.72rem; color: var(--gray, #9aa);
+    font-family: var(--font-mono, monospace); white-space: nowrap;
+  }
+  .area-fallback {
+    flex-direction: column; align-items: stretch; gap: 8px;
+    padding: 14px; border-radius: 8px;
+    background: rgba(243,156,18,0.1);
+    border: 1px solid rgba(243,156,18,0.3);
+  }
+  .area-fallback-hint { font-size: 0.8rem; color: #f39c12; margin: 0 0 8px; }
+  #area-fallback-input {
+    width: 100%; padding: 10px 12px; background: rgba(15,17,32,0.6);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+    color: #fff; font-size: 0.88rem; box-sizing: border-box;
+  }
+  #area-fallback-input:focus { outline: none; border-color: rgba(243,156,18,0.5); }
+  .area-autodetect {
+    margin-bottom: 0; padding: 11px 14px; border-radius: 8px;
+    font-size: 0.83rem;
+  }
+  .area-autodetect.detecting {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--gray, #9aa);
+  }
+  @keyframes areaHighlightFlash {
+    0%   { box-shadow: 0 0 0 0 rgba(46,204,113,0.6); }
+    50%  { box-shadow: 0 0 0 6px rgba(46,204,113,0); }
+    100% { box-shadow: 0 0 0 0 rgba(46,204,113,0); }
+  }
+  .area-highlight-flash { animation: areaHighlightFlash 0.8s ease-out 2; }
 
   .loc-option {
     padding: 10px 14px;
@@ -359,8 +542,21 @@
     border: 1px solid var(--border-2);
   }
 
-  .photo-preview-item img {
+  .photo-preview-item img,
+  .photo-preview-item video {
     width: 100%; height: 100%; object-fit: cover;
+  }
+
+  .preview-video-badge {
+    position: absolute;
+    bottom: 4px; left: 4px;
+    display: flex; align-items: center; gap: 3px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
   }
 
   .photo-preview-remove {
@@ -427,6 +623,79 @@
         // Auto-fill location field if name provided
         if (locationName) {
             document.getElementById('location-field').value = locationName;
+        }
+
+        // Auto-detect the structured Area from this pin (best-effort).
+        autoDetectArea(lat, lng);
+    }
+
+    // ── Reverse-geocode the pin, then FIND-OR-CREATE the area chain ──
+    function autoDetectArea(lat, lng) {
+        showAreaState('resolving');
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`)
+            .then(r => r.json())
+            .then(geo => {
+                const a = geo.address || {};
+                const country = a.country || '';
+                const state   = a.state || a.region || '';
+                const city    = a.city || a.town || a.municipality || a.county || '';
+                const local   = a.suburb || a.neighbourhood || a.city_district || a.village || '';
+
+                if (!country && !state && !city) {
+                    // Nothing usable came back → fallback text box
+                    showAreaState('fallback');
+                    return;
+                }
+
+                const body = new URLSearchParams();
+                if (country) body.set('country', country);
+                if (state)   body.set('state', state);
+                if (city)    body.set('city', city);
+                if (local)   body.set('local', local);
+                body.set('lat', lat); body.set('lng', lng);
+
+                fetch('/api/areas/resolve/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: body.toString(),
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.resolved) {
+                        document.getElementById('area-id-field').value = res.area_id;
+                        document.getElementById('new-area-name-field').value = '';
+                        document.getElementById('new-area-parent-field').value = '';
+                        document.getElementById('area-resolved-path').textContent = res.full_path;
+                        showAreaState('resolved');
+                    } else {
+                        showAreaState('fallback');
+                    }
+                })
+                .catch(() => showAreaState('fallback'));
+            })
+            .catch(() => showAreaState('fallback'));
+    }
+
+    // Toggle which area sub-panel is visible
+    function showAreaState(state) {
+        const ids = {
+            awaiting:  'area-awaiting',
+            resolving: 'area-resolving',
+            resolved:  'area-resolved',
+            fallback:  'area-fallback',
+        };
+        Object.values(ids).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+        const show = document.getElementById(ids[state]);
+        if (show) show.style.display = (state === 'resolved' || state === 'fallback') ? 'flex' : 'block';
+        if (state === 'resolved') {
+            show.classList.add('area-highlight-flash');
+            setTimeout(() => show.classList.remove('area-highlight-flash'), 1600);
         }
     }
 
@@ -539,6 +808,17 @@
         map.flyTo([lat, lon], 15, { animate: true, duration: 1.2 });
         placeMarker(lat, lon, null); // don't overwrite field — already filled
     });
+
+    // ============================================
+    // AREA FALLBACK (only used when geocoding fails)
+    // ============================================
+    window.onFallbackInput = function () {
+        const name = document.getElementById('area-fallback-input').value.trim();
+        document.getElementById('new-area-name-field').value = name;
+        document.getElementById('area-id-field').value = '';
+        // Parent unknown on full geocode failure; backend will create as a top-level-ish area
+        document.getElementById('new-area-parent-field').value = '';
+    };
 
     // ============================================
     // TYPE AUTOCOMPLETE (unchanged)
@@ -679,40 +959,72 @@
             typeSearch.focus();
             return;
         }
+        // Guidelines acknowledgement must be checked
+        const ack = document.getElementById('guidelines-ack');
+        if (ack && !ack.checked) {
+            e.preventDefault();
+            ack.focus();
+            const box = document.querySelector('.report-guidelines');
+            if (box) {
+                box.style.borderLeftColor = '#e63946';
+                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
     });
 
   // ── Photo Upload Handling ──
   let selectedFiles = [];
 
+  const MAX_PHOTO = 10 * 1024 * 1024;
+  const MAX_VIDEO = 50 * 1024 * 1024;
+
+  function isVideoFile(file) {
+    return file.type.startsWith('video/') || /\.(mp4|mov|webm|m4v|ogg|ogv)$/i.test(file.name);
+  }
+
+  function checkFileOk(file) {
+    const video = isVideoFile(file);
+    const cap = video ? MAX_VIDEO : MAX_PHOTO;
+    if (file.size > cap) {
+      alert(`${file.name} is too large. Max ${video ? '50MB for videos' : '10MB for photos'}.`);
+      return false;
+    }
+    return true;
+  }
+
   function handlePhotoSelect(input) {
     const files = Array.from(input.files);
-    const remaining = 5 - selectedFiles.length;
-    const toAdd = files.slice(0, remaining);
-
-    toAdd.forEach(file => {
-      if (file.size > 10 * 1024 * 1024) {
-        alert(`${file.name} is too large. Max 10MB per photo.`);
-        return;
-      }
+    const remaining = 5 - selectedFiles.filter(f => f).length;
+    files.slice(0, remaining).forEach(file => {
+      if (!checkFileOk(file)) return;
       selectedFiles.push(file);
       renderPreview(file, selectedFiles.length - 1);
     });
-
-    // Reset input so same file can be re-selected
     input.value = '';
   }
 
   function renderPreview(file, index) {
+    const container = document.getElementById('photo-previews');
+    const item = document.createElement('div');
+    item.className = 'photo-preview-item';
+    item.id = `preview-${index}`;
+    const video = isVideoFile(file);
+
     const reader = new FileReader();
     reader.onload = function(e) {
-      const container = document.getElementById('photo-previews');
-      const item = document.createElement('div');
-      item.className = 'photo-preview-item';
-      item.id = `preview-${index}`;
-      item.innerHTML = `
-        <img src="${e.target.result}" alt="preview"/>
-        <button type="button" class="photo-preview-remove" onclick="removePhoto(${index})">✕</button>
-      `;
+      if (video) {
+        item.innerHTML = `
+          <video src="${e.target.result}" muted playsinline preload="metadata"></video>
+          <span class="preview-video-badge"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Video</span>
+          <button type="button" class="photo-preview-remove" onclick="removePhoto(${index})">✕</button>
+        `;
+      } else {
+        item.innerHTML = `
+          <img src="${e.target.result}" alt="preview"/>
+          <button type="button" class="photo-preview-remove" onclick="removePhoto(${index})">✕</button>
+        `;
+      }
       container.appendChild(item);
     };
     reader.readAsDataURL(file);
@@ -735,15 +1047,10 @@
     e.preventDefault();
     dropZone.classList.remove('drag-over');
     const dt = e.dataTransfer;
-    const input = document.getElementById('photo-input');
-    // Create fake event
-    const files = Array.from(dt.files).filter(f => f.type.startsWith('image/'));
-    const remaining = 5 - selectedFiles.length;
+    const files = Array.from(dt.files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
+    const remaining = 5 - selectedFiles.filter(f => f).length;
     files.slice(0, remaining).forEach(file => {
-      if (file.size > 10 * 1024 * 1024) {
-        alert(`${file.name} is too large. Max 10MB.`);
-        return;
-      }
+      if (!checkFileOk(file)) return;
       selectedFiles.push(file);
       renderPreview(file, selectedFiles.length - 1);
     });
