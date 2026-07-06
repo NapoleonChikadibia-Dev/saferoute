@@ -31,7 +31,9 @@ env/
 Thumbs.db
 
 staticfiles/
-*.pyc
 __pycache__/
+*.pyc
 db.sqlite3
 .env
+.env.*
+!.env.example
