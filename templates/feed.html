@@ -1330,39 +1330,50 @@
   @media (max-width: 900px) {
     /* Hide the left rail; show the normal top nav so users can navigate */
     .feed-nav-rail { display: none; }
-    .feed-mobile-topnav { display: block; }
+    .feed-mobile-topnav { display: block; position: relative; z-index: 1000; }
 
-    /* Fill the screen below the top nav with NO gaps. Cancel the container's
-       padding on all sides (top pulls under nav, bottom removes the gap).
-       Use 100dvh so mobile browser chrome is handled correctly. */
+    /* Pin the feed to the exact viewport width so nothing overflows the right
+       edge (which was cutting off the action buttons). Using fixed positioning
+       at the viewport edges is bulletproof regardless of container padding. */
     .feed-layout {
-      margin: -28px -36px;            /* cancel container padding all sides */
-      height: calc(100dvh - 64px);    /* 64px = top nav height */
-      min-height: calc(100dvh - 64px);
+      position: fixed;
+      top: 64px;                      /* below the ~64px top nav */
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 100%;
+      height: auto;                   /* top/bottom pins define the height */
+      min-height: 0;
+      margin: 0;
+      overflow: hidden;
     }
     /* No outer padding on the wrapper here — cards go edge-to-edge */
-    .feed-wrapper { padding: 0; }
+    .feed-wrapper { padding: 0; width: 100%; }
     .feed-card {
+      width: 100%;
       max-width: 100%;                /* full-width media = true TikTok */
       height: 100%;                   /* fills one screenful, no gap */
       min-height: 100%;
       margin: 0;
       border-radius: 0;
     }
+    /* Keep the action rail comfortably on-screen */
+    .feed-actions { right: 8px; }
   }
 
   /* ── MOBILE (≤768px): nudge action rail + info for thumbs ── */
   @media (max-width: 768px) {
-    .feed-actions { right: 10px; bottom: 110px; }
-    .feed-info { left: 12px; right: 72px; bottom: 90px; }
+    .feed-actions { right: 8px; bottom: 90px; }
+    .feed-info { left: 12px; right: 70px; bottom: 76px; }
     .feed-title { font-size: 1rem; }
   }
 
   /* ── SMALL PHONES (≤480px): tighter spacing + smaller buttons ── */
   @media (max-width: 480px) {
-    .feed-action-icon { width: 42px; height: 42px; }
-    .feed-actions { gap: 14px; bottom: 100px; }
-    .feed-info { right: 64px; }
+    .feed-action-icon { width: 40px; height: 40px; }
+    .feed-actions { gap: 12px; right: 6px; bottom: 84px; }
+    .feed-info { right: 58px; }
     .feed-title { font-size: 0.95rem; }
     .feed-news-badge { top: 14px; left: 12px; font-size: 0.66rem; }
   }
